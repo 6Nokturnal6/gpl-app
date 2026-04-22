@@ -4,29 +4,27 @@ const helmet = require('helmet');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 
-const authRoutes = require('./routes/auth');
-const submissionRoutes = require('./routes/submissions');
-const exportRoutes = require('./routes/export');
-const adminRoutes = require('./routes/admin');
+const authRoutes         = require('./routes/auth');
+const submissionRoutes   = require('./routes/submissions');
+const exportRoutes       = require('./routes/export');
+const adminRoutes        = require('./routes/admin');
+const campusRoutes       = require('./routes/campuses');
+const universityRoutes   = require('./routes/universities');
 
 const app = express();
-
 app.use(helmet());
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
-}));
+app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173', credentials: true }));
 app.use(express.json({ limit: '2mb' }));
+app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 300 }));
 
-const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 200 });
-app.use(limiter);
+app.use('/api/auth',         authRoutes);
+app.use('/api/submissions',  submissionRoutes);
+app.use('/api/export',       exportRoutes);
+app.use('/api/admin',        adminRoutes);
+app.use('/api/campuses',     campusRoutes);
+app.use('/api/universities', universityRoutes);
 
-app.use('/api/auth', authRoutes);
-app.use('/api/submissions', submissionRoutes);
-app.use('/api/export', exportRoutes);
-app.use('/api/admin', adminRoutes);
-
-app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/api/health', (req, res) => res.json({ status: 'ok', version: 3 }));
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -34,4 +32,4 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`GPL API running on port ${PORT}`));
+app.listen(PORT, () => console.log(`GPL API v3 running on port ${PORT}`));

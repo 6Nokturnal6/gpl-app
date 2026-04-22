@@ -67,7 +67,11 @@ export default function FormPage() {
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
           {saving && <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>A guardar...</span>}
           {saveError && <span style={{ fontSize: 12, color: 'var(--color-text-danger)' }}>{saveError}</span>}
-          {!saving && !saveError && <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>{user?.institution}</span>}
+          {!saving && !saveError && (
+            <span style={{ fontSize:12, color:'var(--color-text-secondary)' }}>
+              {user?.campus_nome ? `${user.campus_nome} · ${user.institution}` : user?.institution}
+            </span>
+          )}
 
           <button onClick={() => handleDownload('xlsx')} disabled={!!downloading} style={{ fontSize: 12, padding: '5px 12px', border: '0.5px solid var(--color-border-tertiary)', borderRadius: 6, background: 'transparent', cursor: 'pointer', color: 'var(--color-text-secondary)' }}>
             {downloading === 'xlsx' ? '...' : '⬇ Excel'}

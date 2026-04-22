@@ -23,8 +23,8 @@ export function AuthProvider({ children }) {
     return r.data.user;
   };
 
-  const register = async (email, password, institution) => {
-    const r = await authApi.register(email, password, institution);
+  const register = async (email, password, institution, nome) => {
+    const r = await authApi.register(email, password, institution, nome);
     localStorage.setItem('gpl_token', r.data.token);
     setUser(r.data.user);
     return r.data.user;

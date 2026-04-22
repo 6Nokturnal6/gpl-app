@@ -21,7 +21,7 @@ api.interceptors.response.use(
 
 export const authApi = {
   login: (email, password) => api.post('/auth/login', { email, password }),
-  register: (email, password, institution) => api.post('/auth/register', { email, password, institution }),
+  register: (email, password, institution, nome) => api.post('/auth/register', { email, password, institution, nome }),
   me: () => api.get('/auth/me'),
 };
 
@@ -70,3 +70,18 @@ export const adminApi = {
 };
 
 export default api;
+
+export const campusApi = {
+  list: (university_id) => api.get('/campuses', { params: university_id ? { university_id } : {} }),
+  create: (data) => api.post('/campuses', data),
+  update: (id, data) => api.put(`/campuses/${id}`, data),
+  delete: (id) => api.delete(`/campuses/${id}`),
+  assign: (campusId, user_id, university_id) => api.post(`/campuses/${campusId}/assign`, { user_id, university_id }),
+  unassigned: () => api.get('/campuses/unassigned'),
+};
+
+export const universityApi = {
+  list: () => api.get('/universities'),
+  create: (data) => api.post('/universities', data),
+  summary: (id) => api.get(`/universities/${id}/summary`),
+};

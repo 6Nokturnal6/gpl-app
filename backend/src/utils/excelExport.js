@@ -38,8 +38,10 @@ function titleStyle() {
 }
 
 async function buildExcel(data) {
+  const YEAR = new Date().getFullYear();
+  const NEXT_YEAR = YEAR + 1;
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'GPL App';
+  wb.creator = 'aGPLúrio';
   wb.created = new Date();
 
   // ── Sheet 1: ID IES ────────────────────────────────────────────────────────
@@ -68,7 +70,7 @@ async function buildExcel(data) {
   wsEst.columns = [
     {width:28},{width:10},{width:22},{width:22},{width:14},{width:16},{width:18},{width:10},{width:10},{width:10}
   ];
-  const estTitle = wsEst.addRow(['FOLHAS DE CÁLCULO PARA REPORTAGEM DE ESTATÍSTICA DAS IES — ANO 2024']);
+  const estTitle = wsEst.addRow([`FOLHAS DE CÁLCULO PARA REPORTAGEM DE ESTATÍSTICA DAS IES — ANO ${YEAR}`]);
   estTitle.getCell(1).style = titleStyle();
   wsEst.mergeCells('A1:J1');
   wsEst.addRow(['1. ESTATÍSTICA SOBRE CORPO DISCENTE']).getCell(1).style = { font: { bold: true, size: 11 } };
@@ -183,7 +185,7 @@ async function buildExcel(data) {
   // ── Sheet 7: Previsão — individual courses ─────────────────────────────────
   const wsPrev = wb.addWorksheet('Previsão');
   wsPrev.columns = [{width:28},{width:10},{width:22},{width:18},{width:16},{width:10},{width:10},{width:10}];
-  wsPrev.addRow(['PREVISÃO / PRELIMINAR PARA 2025']).getCell(1).style = titleStyle();
+  wsPrev.addRow([`PREVISÃO / PRELIMINAR PARA ${NEXT_YEAR}`]).getCell(1).style = titleStyle();
   wsPrev.mergeCells('A1:H1');
   const pHdr = wsPrev.addRow(['Nome do curso','Duração','Área','Grau','Província','Homens','Mulheres','Total']);
   pHdr.eachCell(c => { c.style = headerStyle(); });
@@ -224,7 +226,7 @@ async function buildExcel(data) {
   }
 
   // Students 2024 vs 2025
-  addSumTitle('I. Estudantes — Comparação 2024 vs 2025');
+  addSumTitle(`I. Estudantes — Comparação ${YEAR} vs ${NEXT_YEAR}`);
   addSumHdr(['Grau','H 2024','M 2024','Total 2024','H 2025','M 2025','Total 2025']);
   summary.studentsByGrau.forEach((r,i)=>addSumRow([r.grau,r.h2024,r.m2024,r.total2024,r.h2025,r.m2025,r.total2025],i%2===1));
   const st=summary.studentTotals;

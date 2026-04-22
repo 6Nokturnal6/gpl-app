@@ -142,3 +142,39 @@ VALUES (
   'Ministério da Educação',
   'superadmin'
 ) ON CONFLICT (email) DO UPDATE SET role='superadmin';
+
+-- Section locks (per section per submission)
+CREATE TABLE IF NOT EXISTS section_locks (
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  section       TEXT NOT NULL,  -- 'idies','estudantes','docentes', etc.
+  locked_by     UUID REFERENCES users(id),
+  locked_at     TIMESTAMPTZ DEFAULT NOW(),
+  unlock_requested BOOLEAN DEFAULT FALSE,
+  unlock_requested_at TIMESTAMPTZ,
+  UNIQUE(submission_id, section)
+);
+
+-- Audit log
+CREATE TABLE IF NOT EXISTS audit_log (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id     UUID REFERENCES users(id),
+  user_email  TEXT,
+  user_role   TEXT,
+  action      TEXT NOT NULL,  -- 'login','logout','save_section','lock_section','unlock_section','submit','approve','reject','create_user','deactivate_user','request_unlock'
+  entity_type TEXT,           -- 'submission','user','campus','university'
+  entity_id   TEXT,
+  section     TEXT,
+  detail      JSONB,          -- full before/after for superadmin trail
+  ip_address  TEXT,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_log(action);
+CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at DESC);
+
+-- Users: add is_active flag
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS deactivated_at TIMESTAMPTZ;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS deactivated_by UUID REFERENCES users(id);

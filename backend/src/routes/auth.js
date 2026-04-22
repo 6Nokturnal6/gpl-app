@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const Joi = require('joi');
 const db = require('../models/db');
 const { authenticate } = require('../middleware/auth');
+const audit = require('../utils/audit');
 
 const router = express.Router();
 
@@ -66,10 +67,16 @@ router.post('/login', async (req, res, next) => {
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+    if (user.is_active === false) {
+      return res.status(403).json({ error: 'Conta desactivada. Contacte o Director GPL.' });
+    }
     const token = jwt.sign(
       { id: user.id, role: user.role, university_id: user.university_id, campus_id: user.campus_id },
       process.env.JWT_SECRET, { expiresIn: '8h' }
     );
+    // Log login
+    audit.log({ userId: user.id, userEmail: user.email, userRole: user.role,
+      action: 'login', ip: audit.getIp(req) });
     res.json({ token, user: {
       id: user.id, email: user.email, nome: user.nome,
       institution: user.institution, role: user.role,

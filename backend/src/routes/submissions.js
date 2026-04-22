@@ -1,8 +1,9 @@
 const express = require('express');
 const Joi = require('joi');
 const db = require('../models/db');
-const { authenticate, requireChefe } = require('../middleware/auth');
+const { authenticate, requireChefe, requireDirector } = require('../middleware/auth');
 const { sendSubmissionConfirmation, sendAdminNewSubmission } = require('../utils/email');
+const audit = require('../utils/audit');
 
 const router = express.Router();
 router.use(authenticate, requireChefe);
@@ -47,11 +48,12 @@ router.get('/current', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// PUT /api/submissions/idies
-router.put('/idies', async (req, res, next) => {
+// PUT /api/submissions/idies — director_gpl or superadmin only
+router.put('/idies', requireDirector, async (req, res, next) => {
   try {
     const sub = await getOrCreateSubmission(req.user.id, req.user.campus_id, req.user.university_id);
     const d = req.body;
+    const before = (await db.query('SELECT * FROM id_ies WHERE submission_id=$1',[sub.id])).rows[0];
     await db.query(`
       INSERT INTO id_ies (submission_id,nome,sigla,nuit,ano_inicio,provincia,distrito,website,contacto,email,responsavel,funcao,email_resp)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
@@ -60,9 +62,12 @@ router.put('/idies', async (req, res, next) => {
         website=$8,contacto=$9,email=$10,responsavel=$11,funcao=$12,email_resp=$13`,
       [sub.id,d.nome,d.sigla,d.nuit,d.ano_inicio,d.provincia,d.distrito,
        d.website,d.contacto,d.email,d.responsavel,d.funcao,d.email_resp]);
+    audit.log({ userId:req.user.id, userEmail:req.user.email, userRole:req.user.role,
+      action:'save_section', entityType:'submission', entityId:sub.id,
+      section:'idies', detail:{ before, after:d }, ip:audit.getIp(req) });
     res.json({ ok: true });
   } catch (err) { next(err); }
-});
+}); 
 
 // PUT /api/submissions/estudantes
 router.put('/estudantes', async (req, res, next) => {
@@ -76,6 +81,9 @@ router.put('/estudantes', async (req, res, next) => {
         'INSERT INTO estudantes (submission_id,curso,duracao,area,subarea,regime,provincia,grau,homens,mulheres,sort_order) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)',
         [sub.id,r.curso,r.duracao||null,r.area,r.subarea,r.regime,r.provincia,r.grau,r.homens||0,r.mulheres||0,i]);
     }
+    audit.log({ userId:req.user.id, userEmail:req.user.email, userRole:req.user.role,
+      action:'save_section', entityType:'submission', entityId:sub.id,
+      section:'estudantes', detail:{ rows_count: rows.length }, ip:audit.getIp(req) });
     res.json({ ok: true, saved: rows.length });
   } catch (err) { next(err); }
 });

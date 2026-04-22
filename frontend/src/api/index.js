@@ -85,3 +85,25 @@ export const universityApi = {
   create: (data) => api.post('/universities', data),
   summary: (id) => api.get(`/universities/${id}/summary`),
 };
+
+export const lockApi = {
+  getLocks: (submissionId) => api.get(`/locks/${submissionId}`),
+  lock: (submissionId, section) => api.post(`/locks/${submissionId}/${section}`),
+  requestUnlock: (submissionId, section) => api.post(`/locks/${submissionId}/${section}/request-unlock`),
+  unlock: (submissionId, section) => api.delete(`/locks/${submissionId}/${section}`),
+};
+
+export const auditApi = {
+  getFull: (params) => api.get('/audit', { params }),
+  getSummary: () => api.get('/audit/summary'),
+};
+
+export const userMgmtApi = {
+  list: () => api.get('/users'),
+  stats: () => api.get('/users/stats'),
+  deactivate: (id) => api.patch(`/users/${id}/deactivate`),
+  reactivate: (id) => api.patch(`/users/${id}/reactivate`),
+  changeRole: (id, role) => api.patch(`/users/${id}/role`, { role }),
+  resetPassword: (id, password) => api.patch(`/users/${id}/reset-password`, { password }),
+  delete: (id) => api.delete(`/users/${id}`),
+};

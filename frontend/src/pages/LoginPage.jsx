@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { APP_NAME, CURRENT_YEAR } from '../utils/appConfig';
 
 const ROLE_LABELS = {
   superadmin:         'Super Administrador',
@@ -70,8 +71,8 @@ export default function LoginPage() {
         <div style={s.logo}>
           <div style={s.badge}>IES</div>
           <div>
-            <div style={s.title}>GPL App</div>
-            <div style={s.sub}>Recolha Estatística 2024 — Universidade Lúrio</div>
+            <div style={s.title}>{APP_NAME}</div>
+            <div style={s.sub}>Recolha Estatística {CURRENT_YEAR} — Universidade Lúrio</div>
           </div>
         </div>
 

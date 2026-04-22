@@ -19,8 +19,11 @@ CREATE TABLE IF NOT EXISTS submissions (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   year        INTEGER NOT NULL DEFAULT 2024,
-  status      TEXT NOT NULL DEFAULT 'draft',       -- 'draft' | 'submitted' | 'approved'
+  status      TEXT NOT NULL DEFAULT 'draft',       -- 'draft' | 'submitted' | 'approved' | 'rejected'
   submitted_at TIMESTAMPTZ,
+  reviewed_at  TIMESTAMPTZ,
+  reviewed_by  UUID REFERENCES users(id),
+  review_note  TEXT,
   created_at  TIMESTAMPTZ DEFAULT NOW(),
   updated_at  TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(user_id, year)

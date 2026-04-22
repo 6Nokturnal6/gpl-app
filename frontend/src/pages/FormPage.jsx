@@ -44,13 +44,13 @@ export default function FormPage() {
     }
   };
 
-  const handleDownload = async () => {
-    setDownloading(true);
+  const handleDownload = async (format) => {
+    setDownloading(format);
     try {
-      await exportApi.downloadXlsx(`Formulario_Recolha_2024_${data?.idies?.sigla || 'IES'}.xlsx`);
-    } finally {
-      setDownloading(false);
-    }
+      const sigla = data?.idies?.sigla || 'IES';
+      if (format === 'xlsx') await exportApi.downloadXlsx(`Formulario_Recolha_2024_${sigla}.xlsx`);
+      if (format === 'pdf')  await exportApi.downloadPdf(`Formulario_Recolha_2024_${sigla}.pdf`);
+    } finally { setDownloading(false); }
   };
 
   const SectionComp = COMPONENTS[current];
@@ -69,9 +69,15 @@ export default function FormPage() {
           {saveError && <span style={{ fontSize: 12, color: 'var(--color-text-danger)' }}>{saveError}</span>}
           {!saving && !saveError && <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>{user?.institution}</span>}
 
-          <button onClick={handleDownload} disabled={downloading} style={{ fontSize: 12, padding: '5px 12px', border: '0.5px solid var(--color-border-tertiary)', borderRadius: 6, background: 'transparent', cursor: 'pointer', color: 'var(--color-text-secondary)' }}>
-            {downloading ? '...' : '⬇ Excel'}
+          <button onClick={() => handleDownload('xlsx')} disabled={!!downloading} style={{ fontSize: 12, padding: '5px 12px', border: '0.5px solid var(--color-border-tertiary)', borderRadius: 6, background: 'transparent', cursor: 'pointer', color: 'var(--color-text-secondary)' }}>
+            {downloading === 'xlsx' ? '...' : '⬇ Excel'}
           </button>
+          <button onClick={() => handleDownload('pdf')} disabled={!!downloading} style={{ fontSize: 12, padding: '5px 12px', border: '0.5px solid var(--color-border-tertiary)', borderRadius: 6, background: 'transparent', cursor: 'pointer', color: 'var(--color-text-secondary)' }}>
+            {downloading === 'pdf' ? '...' : '⬇ PDF'}
+          </button>
+          {user?.role === 'admin' && (
+            <a href="/admin" style={{ fontSize: 12, padding: '5px 12px', border: '0.5px solid #185FA5', borderRadius: 6, background: '#E6F1FB', color: '#185FA5', textDecoration: 'none' }}>Admin</a>
+          )}
           <button onClick={() => setView(view === 'form' ? 'dash' : 'form')} style={{ fontSize: 12, padding: '5px 12px', border: '0.5px solid var(--color-border-tertiary)', borderRadius: 6, background: view === 'dash' ? '#185FA5' : 'transparent', color: view === 'dash' ? '#fff' : 'var(--color-text-secondary)', cursor: 'pointer' }}>
             {view === 'dash' ? 'Formulário' : 'Dashboard'}
           </button>

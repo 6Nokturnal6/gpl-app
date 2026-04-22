@@ -2,6 +2,7 @@ const express = require('express');
 const Joi = require('joi');
 const db = require('../models/db');
 const { authenticate } = require('../middleware/auth');
+const { sendSubmissionConfirmation, sendAdminNewSubmission } = require('../utils/email');
 
 const router = express.Router();
 router.use(authenticate);
@@ -207,6 +208,34 @@ router.post('/submit', async (req, res, next) => {
       "UPDATE submissions SET status='submitted', submitted_at=NOW() WHERE id=$1",
       [sub.id]
     );
+
+    // Fetch extra info for email
+    const [userRes, idiesRes, estRes] = await Promise.all([
+      db.query('SELECT email FROM users WHERE id=$1', [req.user.id]),
+      db.query('SELECT nome,sigla,provincia FROM id_ies WHERE submission_id=$1', [sub.id]),
+      db.query('SELECT COALESCE(SUM(homens+mulheres),0) AS total FROM estudantes WHERE submission_id=$1', [sub.id]),
+    ]);
+    const userEmail = userRes.rows[0]?.email;
+    const idies = idiesRes.rows[0] || {};
+    const totalEstudantes = estRes.rows[0]?.total || 0;
+
+    // Send emails (non-blocking — don't fail the request if email fails)
+    Promise.all([
+      sendSubmissionConfirmation({
+        to: userEmail,
+        institution: idies.nome || req.user.institution,
+        sigla: idies.sigla,
+        submittedAt: new Date(),
+      }),
+      sendAdminNewSubmission({
+        institution: idies.nome || req.user.institution,
+        sigla: idies.sigla,
+        email: userEmail,
+        provincia: idies.provincia,
+        totalEstudantes,
+      }),
+    ]).catch(err => console.error('Email error (non-fatal):', err.message));
+
     res.json({ ok: true, message: 'Submission received' });
   } catch (err) { next(err); }
 });

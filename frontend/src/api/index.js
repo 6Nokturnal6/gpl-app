@@ -42,11 +42,31 @@ export const exportApi = {
     const res = await api.get('/export/xlsx', { responseType: 'blob' });
     const url = URL.createObjectURL(res.data);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = filename || 'Formulario_Recolha_2024.xlsx';
-    a.click();
-    URL.revokeObjectURL(url);
-  }
+    a.href = url; a.download = filename || 'Formulario_Recolha_2024.xlsx';
+    a.click(); URL.revokeObjectURL(url);
+  },
+  downloadPdf: async (filename) => {
+    const res = await api.get('/export/pdf', { responseType: 'blob' });
+    const url = URL.createObjectURL(res.data);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename || 'Formulario_Recolha_2024.pdf';
+    a.click(); URL.revokeObjectURL(url);
+  },
+  downloadSubmissionPdf: async (submissionId, filename) => {
+    const res = await api.get(`/export/pdf/${submissionId}`, { responseType: 'blob' });
+    const url = URL.createObjectURL(res.data);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename || 'Formulario_2024.pdf';
+    a.click(); URL.revokeObjectURL(url);
+  },
+};
+
+export const adminApi = {
+  getSubmissions: (params) => api.get('/admin/submissions', { params }),
+  getSubmission: (id) => api.get(`/admin/submissions/${id}`),
+  setStatus: (id, status, note) => api.patch(`/admin/submissions/${id}/status`, { status, note }),
+  getStats: () => api.get('/admin/stats'),
+  getUsers: () => api.get('/admin/users'),
 };
 
 export default api;

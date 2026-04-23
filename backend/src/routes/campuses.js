@@ -18,7 +18,7 @@ router.get('/', async (req, res, next) => {
         s.status AS submission_status, s.id AS submission_id
        FROM campuses c
        LEFT JOIN users u ON u.campus_id = c.id AND u.role='chefe_departamento'
-       LEFT JOIN submissions s ON s.campus_id = c.id AND s.year=2024
+       LEFT JOIN submissions s ON s.campus_id = c.id AND s.year=EXTRACT(YEAR FROM NOW())
        WHERE c.university_id=$1 ORDER BY c.nome`, [univId]);
     res.json(r.rows);
   } catch (err) { next(err); }

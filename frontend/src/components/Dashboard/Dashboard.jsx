@@ -1,4 +1,6 @@
-const SECTIONS = ['ID IES','Estudantes','Docentes','Investigadores','Finanças','Infraestrutura','Previsão 2025'];
+import { CURRENT_YEAR, NEXT_YEAR } from '../../utils/appConfig';
+
+const SECTIONS = ['ID IES','Estudantes','Docentes','Investigadores','Finanças','Infraestrutura',`Previsão ${NEXT_YEAR}`];
 
 function MetricCard({ label, value, sub }) {
   return (
@@ -11,6 +13,12 @@ function MetricCard({ label, value, sub }) {
 }
 
 function BarChart({ title, rows, maxVal, colorH='#185FA5', colorM='#5DCAA5' }) {
+  if (!rows || rows.length === 0) return (
+    <div>
+      <div style={{ fontSize:13, fontWeight:500, marginBottom:10 }}>{title}</div>
+      <div style={{ fontSize:13, color:'var(--color-text-secondary)' }}>Sem dados inseridos ainda</div>
+    </div>
+  );
   return (
     <div>
       <div style={{ fontSize:13, fontWeight:500, marginBottom:10 }}>{title}</div>
@@ -24,13 +32,13 @@ function BarChart({ title, rows, maxVal, colorH='#185FA5', colorM='#5DCAA5' }) {
             <div style={{ width:110, color:'var(--color-text-secondary)', textAlign:'right', flexShrink:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={r.label}>{r.label}</div>
             <div style={{ flex:1, display:'flex', flexDirection:'column', gap:3 }}>
               <div style={{ height:14, background:'var(--color-background-secondary)', borderRadius:3, overflow:'hidden' }}>
-                <div style={{ height:'100%', width:`${Math.round((r.h/maxVal)*100)}%`, background:colorH, borderRadius:3, transition:'width 0.5s' }} />
+                <div style={{ height:'100%', width:`${Math.round(((r.h||0)/maxVal)*100)}%`, background:colorH, borderRadius:3, transition:'width 0.5s' }} />
               </div>
               <div style={{ height:14, background:'var(--color-background-secondary)', borderRadius:3, overflow:'hidden' }}>
-                <div style={{ height:'100%', width:`${Math.round((r.m/maxVal)*100)}%`, background:colorM, borderRadius:3, transition:'width 0.5s' }} />
+                <div style={{ height:'100%', width:`${Math.round(((r.m||0)/maxVal)*100)}%`, background:colorM, borderRadius:3, transition:'width 0.5s' }} />
               </div>
             </div>
-            <div style={{ fontSize:11, color:'var(--color-text-secondary)', minWidth:28, textAlign:'right' }}>{r.h+r.m}</div>
+            <div style={{ fontSize:11, color:'var(--color-text-secondary)', minWidth:28, textAlign:'right' }}>{(r.h||0)+(r.m||0)}</div>
           </div>
         ))}
       </div>
@@ -40,12 +48,12 @@ function BarChart({ title, rows, maxVal, colorH='#185FA5', colorM='#5DCAA5' }) {
 
 function FundingBar({ data }) {
   const items = [
-    { label:'OGE', val: parseFloat(data.oge)||0, color:'#185FA5' },
-    { label:'Doações', val: parseFloat(data.doacoes)||0, color:'#5DCAA5' },
-    { label:'Créditos', val: parseFloat(data.creditos)||0, color:'#EF9F27' },
-    { label:'Rec. próprias', val: parseFloat(data.proprias)||0, color:'#D85A30' },
+    { label:'OGE', val:parseFloat(data.oge)||0, color:'#185FA5' },
+    { label:'Doações', val:parseFloat(data.doacoes)||0, color:'#5DCAA5' },
+    { label:'Créditos', val:parseFloat(data.creditos)||0, color:'#EF9F27' },
+    { label:'Rec. próprias', val:parseFloat(data.proprias)||0, color:'#D85A30' },
   ];
-  const total = items.reduce((a, i) => a + i.val, 0) || 1;
+  const total = items.reduce((a,i) => a + i.val, 0) || 1;
   return (
     <div>
       <div style={{ fontSize:13, fontWeight:500, marginBottom:10 }}>Fontes de financiamento</div>
@@ -78,11 +86,11 @@ export default function Dashboard({ data, sectionsDone }) {
     h: parseInt(r.homens)||0,
     m: parseInt(r.mulheres)||0,
   }));
-  const maxEst = Math.max(...estudanteRows.map(r=>Math.max(r.h,r.m)), 1);
-  const maxPrev = Math.max(...previsaoRows.map(r=>Math.max(r.h,r.m)), 1);
+  const maxEst  = Math.max(...estudanteRows.map(r => Math.max(r.h||0, r.m||0)), 1);
+  const maxPrev = Math.max(...previsaoRows.map(r => Math.max(r.h||0, r.m||0)), 1);
 
-  const totalEst = estudanteRows.reduce((a,r)=>a+r.h+r.m, 0);
-  const totalPrev = previsaoRows.reduce((a,r)=>a+r.h+r.m, 0);
+  const totalEst  = estudanteRows.reduce((a,r) => a + (r.h||0) + (r.m||0), 0);
+  const totalPrev = previsaoRows.reduce((a,r) => a + (r.h||0) + (r.m||0), 0);
   const totalFunding = (parseFloat(data.financas?.oge)||0)+(parseFloat(data.financas?.doacoes)||0)+(parseFloat(data.financas?.creditos)||0)+(parseFloat(data.financas?.proprias)||0);
   const doneSections = Object.keys(sectionsDone).length;
 
@@ -108,27 +116,33 @@ export default function Dashboard({ data, sectionsDone }) {
       {/* Metrics */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))', gap:12, marginBottom:16 }}>
         <MetricCard label="Secções concluídas" value={`${doneSections} / 7`} />
-        <MetricCard label="Estudantes 2024" value={totalEst.toLocaleString()} sub="total registados" />
+        <MetricCard label={`Estudantes ${CURRENT_YEAR}`} value={totalEst.toLocaleString()} sub="total registados" />
         <MetricCard label="Cursos registados" value={(data.estudantes||[]).length} />
         <MetricCard label="Financiamento total" value={totalFunding.toLocaleString('pt-MZ')} sub="MT × 10³" />
-        <MetricCard label="Estudantes previstos 2025" value={totalPrev.toLocaleString()} />
+        <MetricCard label={`Estudantes previstos ${NEXT_YEAR}`} value={totalPrev.toLocaleString()} />
       </div>
 
       {/* Charts */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
         <div style={{ background:'var(--color-background-primary)', border:'0.5px solid var(--color-border-tertiary)', borderRadius:12, padding:20 }}>
-          {estudanteRows.length > 0
-            ? <BarChart title="Estudantes 2024 por curso" rows={estudanteRows.slice(0,8)} maxVal={maxEst} />
-            : <div style={{ color:'var(--color-text-secondary)', fontSize:13 }}>Sem dados de estudantes ainda</div>}
+          <BarChart
+            title={`Estudantes ${CURRENT_YEAR} por curso`}
+            rows={estudanteRows.slice(0,8)}
+            maxVal={maxEst}
+          />
         </div>
         <div style={{ background:'var(--color-background-primary)', border:'0.5px solid var(--color-border-tertiary)', borderRadius:12, padding:20 }}>
-          {previsaoRows.length > 0
-            ? <BarChart title="Previsão 2025 por curso" rows={previsaoRows.slice(0,8)} maxVal={maxPrev} colorH='#3B6D11' colorM='#97C459' />
-            : <div style={{ color:'var(--color-text-secondary)', fontSize:13 }}>Sem dados de previsão ainda</div>}
+          <BarChart
+            title={`Previsão ${NEXT_YEAR} por curso`}
+            rows={previsaoRows.slice(0,8)}
+            maxVal={maxPrev}
+            colorH='#3B6D11'
+            colorM='#97C459'
+          />
         </div>
       </div>
 
-      {data.financas && (
+      {data.financas && Object.keys(data.financas).length > 0 && (
         <div style={{ background:'var(--color-background-primary)', border:'0.5px solid var(--color-border-tertiary)', borderRadius:12, padding:20 }}>
           <FundingBar data={data.financas} />
         </div>

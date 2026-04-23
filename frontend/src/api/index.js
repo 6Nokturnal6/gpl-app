@@ -37,28 +37,21 @@ export const submissionApi = {
   submit: () => api.post('/submissions/submit'),
 };
 
+async function triggerDownload(url, filename) {
+  const res = await api.get(url, { responseType: 'blob' });
+  const href = URL.createObjectURL(res.data);
+  const a = document.createElement('a');
+  a.href = href; a.download = filename; a.click();
+  URL.revokeObjectURL(href);
+}
+
 export const exportApi = {
-  downloadXlsx: async (filename) => {
-    const res = await api.get('/export/xlsx', { responseType: 'blob' });
-    const url = URL.createObjectURL(res.data);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename || 'Formulario_Recolha_2024.xlsx';
-    a.click(); URL.revokeObjectURL(url);
-  },
-  downloadPdf: async (filename) => {
-    const res = await api.get('/export/pdf', { responseType: 'blob' });
-    const url = URL.createObjectURL(res.data);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename || 'Formulario_Recolha_2024.pdf';
-    a.click(); URL.revokeObjectURL(url);
-  },
-  downloadSubmissionPdf: async (submissionId, filename) => {
-    const res = await api.get(`/export/pdf/${submissionId}`, { responseType: 'blob' });
-    const url = URL.createObjectURL(res.data);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename || 'Formulario_2024.pdf';
-    a.click(); URL.revokeObjectURL(url);
-  },
+  downloadXlsx: (filename) => triggerDownload('/export/xlsx', filename || 'Formulario.xlsx'),
+  downloadPdf: (filename) => triggerDownload('/export/pdf', filename || 'Formulario.pdf'),
+  downloadUniversityXlsx: (filename) => triggerDownload('/export/university/xlsx', filename || 'Consolidado.xlsx'),
+  downloadUniversityPdf: (filename) => triggerDownload('/export/university/pdf', filename || 'Consolidado.pdf'),
+  downloadSubmissionPdf: (subId, filename) => triggerDownload(`/export/pdf/${subId}`, filename || 'Formulario.pdf'),
+  downloadSubmissionXlsx: (subId, filename) => triggerDownload(`/export/xlsx/${subId}`, filename || 'Formulario.xlsx'),
 };
 
 export const adminApi = {
@@ -68,8 +61,6 @@ export const adminApi = {
   getStats: () => api.get('/admin/stats'),
   getUsers: () => api.get('/admin/users'),
 };
-
-export default api;
 
 export const campusApi = {
   list: (university_id) => api.get('/campuses', { params: university_id ? { university_id } : {} }),
@@ -84,6 +75,7 @@ export const universityApi = {
   list: () => api.get('/universities'),
   create: (data) => api.post('/universities', data),
   summary: (id) => api.get(`/universities/${id}/summary`),
+  submit: (id) => api.post(`/universities/${id}/submit`),
 };
 
 export const lockApi = {
@@ -107,3 +99,5 @@ export const userMgmtApi = {
   resetPassword: (id, password) => api.patch(`/users/${id}/reset-password`, { password }),
   delete: (id) => api.delete(`/users/${id}`),
 };
+
+export default api;

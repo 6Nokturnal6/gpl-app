@@ -161,6 +161,10 @@ async function buildExcel(data) {
     row.eachCell(c => { c.style = cellStyle(); });
     row.getCell(2).numFmt = '#,##0';
   });
+  const totalDesp = (parseFloat(fin.func_ensino)||0)+(parseFloat(fin.func_investig)||0)+(parseFloat(fin.func_admin)||0)+(parseFloat(fin.sal_docentes)||0)+(parseFloat(fin.sal_tecnicos)||0);
+  const dTot = wsFin.addRow(['Total despesas', totalDesp]);
+  dTot.eachCell(c => { c.style = headerStyle(LIGHT_BLUE); c.font = { bold: true, size: 10, color: { argb: 'FF' + BLUE } }; });
+  dTot.getCell(2).numFmt = '#,##0';
 
   // ── Sheet 6: Infraestrutura ────────────────────────────────────────────────
   const wsInfra = wb.addWorksheet('Infraestrutura');

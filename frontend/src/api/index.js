@@ -3,7 +3,7 @@ import axios from 'axios';
 const api = axios.create({ baseURL: '/api' });
 
 api.interceptors.request.use(cfg => {
-  const token = localStorage.getItem('gpl_token');
+  const token = sessionStorage.getItem('gpl_token');
   if (token) cfg.headers.Authorization = `Bearer ${token}`;
   return cfg;
 });
@@ -12,7 +12,7 @@ api.interceptors.response.use(
   r => r,
   err => {
     if (err.response?.status === 401) {
-      localStorage.removeItem('gpl_token');
+      sessionStorage.removeItem('gpl_token');
       window.location.href = '/login';
     }
     return Promise.reject(err);
@@ -38,11 +38,25 @@ export const submissionApi = {
 };
 
 async function triggerDownload(url, filename) {
-  const res = await api.get(url, { responseType: 'blob' });
-  const href = URL.createObjectURL(res.data);
-  const a = document.createElement('a');
-  a.href = href; a.download = filename; a.click();
-  URL.revokeObjectURL(href);
+  try {
+    const res = await api.get(url, { responseType: 'blob' });
+    // Check if response is actually an error JSON disguised as blob
+    if (res.data.type === 'application/json') {
+      const text = await res.data.text();
+      const json = JSON.parse(text);
+      throw new Error(json.error || 'Erro ao exportar');
+    }
+    const href = URL.createObjectURL(res.data);
+    const a = document.createElement('a');
+    a.href = href; a.download = filename; a.click();
+    setTimeout(() => URL.revokeObjectURL(href), 1000);
+  } catch (err) {
+    const msg = err.response?.data
+      ? (typeof err.response.data === 'string' ? err.response.data : JSON.stringify(err.response.data))
+      : err.message || 'Erro desconhecido ao exportar';
+    alert(`Não foi possível exportar: ${msg}`);
+    throw err;
+  }
 }
 
 export const exportApi = {

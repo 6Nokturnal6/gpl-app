@@ -8,30 +8,30 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('gpl_token');
+    const token = sessionStorage.getItem('gpl_token');
     if (!token) { setLoading(false); return; }
     authApi.me()
       .then(r => setUser(r.data))
-      .catch(() => localStorage.removeItem('gpl_token'))
+      .catch(() => sessionStorage.removeItem('gpl_token'))
       .finally(() => setLoading(false));
   }, []);
 
   const login = async (email, password) => {
     const r = await authApi.login(email, password);
-    localStorage.setItem('gpl_token', r.data.token);
+    sessionStorage.setItem('gpl_token', r.data.token);
     setUser(r.data.user);
     return r.data.user;
   };
 
   const register = async (email, password, institution, nome) => {
     const r = await authApi.register(email, password, institution, nome);
-    localStorage.setItem('gpl_token', r.data.token);
+    sessionStorage.setItem('gpl_token', r.data.token);
     setUser(r.data.user);
     return r.data.user;
   };
 
   const logout = () => {
-    localStorage.removeItem('gpl_token');
+    sessionStorage.removeItem('gpl_token');
     setUser(null);
   };
 

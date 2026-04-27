@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { submissionApi } from '../api';
+import { submissionApi, lockApi } from '../api';
 
 const SAVE_DELAY = 1500;
 const MAX_RETRIES = 3;
@@ -10,16 +10,20 @@ export function useSubmission() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [lastSaved, setLastSaved] = useState(null);
-  const [sectionsDone, setSectionsDone] = useState({});
+  const [locks, setLocks] = useState({});       // section -> lock object from DB
   const timers = useRef({});
-  const retries = useRef({});
 
-  useEffect(() => {
+  const loadData = useCallback(() => {
     submissionApi.getCurrent()
       .then(r => {
         setSubmission(r.data.submission);
+        // Build locks map from DB
+        const lockMap = {};
+        (r.data.locks || []).forEach(l => { lockMap[l.section] = l; });
+        setLocks(lockMap);
+
         setData({
-          idies: r.data.idies || {},
+          idies: r.data.idies || {},          // university-level ID IES
           estudantes: r.data.estudantes?.length ? r.data.estudantes : [emptyEstudante()],
           docentes: r.data.docentes?.length ? r.data.docentes : [emptyDocente('tempo_inteiro')],
           investigadores: r.data.investigadores?.length ? r.data.investigadores : [emptyInvestigador('tempo_inteiro')],
@@ -33,6 +37,8 @@ export function useSubmission() {
       })
       .catch(err => console.error('Failed to load submission:', err));
   }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   const savers = {
     idies: submissionApi.saveIdIes,
@@ -51,18 +57,19 @@ export function useSubmission() {
       await savers[section](payload);
       setLastSaved(new Date());
       setSaveError(null);
-      retries.current[section] = 0;
     } catch (e) {
       const status = e?.response?.status;
-      // Retry on network errors, not on 4xx
+      if (status === 423) {
+        setSaveError('Secção bloqueada — solicite desbloqueio ao Director GPL.');
+        setSaving(false);
+        return;
+      }
       if (attempt < MAX_RETRIES && (!status || status >= 500)) {
-        const delay = attempt * 1000;
-        setTimeout(() => doSave(section, payload, attempt + 1), delay);
+        setTimeout(() => doSave(section, payload, attempt + 1), attempt * 1000);
       } else {
-        const msg = status === 401 ? 'Sessão expirada. Faça login novamente.'
-          : status === 403 ? 'Sem permissão para guardar.'
-          : 'Erro ao guardar. A tentar novamente...';
-        setSaveError(msg);
+        setSaveError(status === 401 ? 'Sessão expirada. Faça login novamente.'
+          : status === 403 ? 'Sem permissão.'
+          : 'Erro ao guardar. Verifique a ligação.');
       }
     } finally {
       setSaving(false);
@@ -81,13 +88,35 @@ export function useSubmission() {
     });
   }, [autoSave]);
 
-  const markDone = (sectionIdx) => {
-    setSectionsDone(prev => ({ ...prev, [sectionIdx]: true }));
+  // Lock a section in DB and update local state
+  const lockSection = useCallback(async (submissionId, section) => {
+    await lockApi.lock(submissionId, section);
+    const r = await lockApi.getLocks(submissionId);
+    const lockMap = {};
+    r.data.forEach(l => { lockMap[l.section] = l; });
+    setLocks(lockMap);
+  }, []);
+
+  // Request unlock — updates local state optimistically
+  const requestUnlock = useCallback(async (submissionId, section) => {
+    await lockApi.requestUnlock(submissionId, section);
+    setLocks(prev => ({
+      ...prev,
+      [section]: { ...prev[section], unlock_requested: true }
+    }));
+  }, []);
+
+  // Progress: count locked sections (excluding idies which is director's)
+  const CHEFE_SECTIONS = ['estudantes','docentes','investigadores','financas','infra','previsao'];
+  const lockedCount = CHEFE_SECTIONS.filter(s => locks[s]).length;
+  const progress = Math.round(lockedCount / CHEFE_SECTIONS.length * 100);
+
+  return {
+    data, submission, saving, saveError, lastSaved,
+    locks, lockSection, requestUnlock,
+    progress, lockedCount, totalSections: CHEFE_SECTIONS.length,
+    update, reload: loadData,
   };
-
-  const progress = Math.round(Object.keys(sectionsDone).length / 7 * 100);
-
-  return { data, submission, saving, saveError, lastSaved, sectionsDone, markDone, update, progress };
 }
 
 export const emptyEstudante = () => ({ curso:'',duracao:'',area:'',subarea:'',regime:'Presencial',provincia:'',grau:'Licenciatura',homens:0,mulheres:0 });

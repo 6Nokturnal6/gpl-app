@@ -1,9 +1,12 @@
 const express = require('express');
 const db = require('../models/db');
-const { authenticate, requireAdmin } = require('../middleware/auth');
+const { authenticate, requireAdmin, requireDirector } = require('../middleware/auth');
+const audit = require('../utils/audit');
 
 const router = express.Router();
 router.use(authenticate);
+
+const YEAR = () => new Date().getFullYear();
 
 // GET /api/universities
 router.get('/', async (req, res, next) => {
@@ -26,44 +29,85 @@ router.post('/', requireAdmin, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// GET /api/universities/:id/summary — aggregated data from all campuses
-router.get('/:id/summary', async (req, res, next) => {
+// GET /api/universities/:id/idies — get university-level ID IES
+router.get('/:id/idies', async (req, res, next) => {
   try {
     const uid = req.params.id;
-    // Only superadmin or the university's director can see this
+    // Allow director of this university or superadmin or any chefe of this university
     if (req.user.role !== 'superadmin' && req.user.university_id !== uid) {
       return res.status(403).json({ error: 'Forbidden' });
     }
-    const [campuses, students, staff, researchers, finances, labs, salas] = await Promise.all([
-      db.query(`SELECT c.nome, c.provincia, s.status, s.id as submission_id
-                FROM campuses c LEFT JOIN submissions s ON s.campus_id=c.id AND s.year=2024
-                WHERE c.university_id=$1`, [uid]),
+    const r = await db.query('SELECT * FROM university_id_ies WHERE university_id=$1', [uid]);
+    res.json(r.rows[0] || null);
+  } catch (err) { next(err); }
+});
+
+// PUT /api/universities/:id/idies — director fills university ID IES
+router.put('/:id/idies', requireDirector, async (req, res, next) => {
+  try {
+    const uid = req.params.id;
+    if (req.user.role !== 'superadmin' && req.user.university_id !== uid) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    const d = req.body;
+    const before = (await db.query('SELECT * FROM university_id_ies WHERE university_id=$1', [uid])).rows[0];
+    await db.query(`
+      INSERT INTO university_id_ies
+        (university_id,nome,sigla,nuit,ano_inicio,provincia,distrito,website,contacto,email,responsavel,funcao,email_resp,updated_at)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,NOW())
+      ON CONFLICT (university_id) DO UPDATE SET
+        nome=$2,sigla=$3,nuit=$4,ano_inicio=$5,provincia=$6,distrito=$7,
+        website=$8,contacto=$9,email=$10,responsavel=$11,funcao=$12,email_resp=$13,updated_at=NOW()`,
+      [uid,d.nome,d.sigla,d.nuit,d.ano_inicio,d.provincia,d.distrito,
+       d.website,d.contacto,d.email,d.responsavel,d.funcao,d.email_resp]);
+    audit.log({ userId:req.user.id, userEmail:req.user.email, userRole:req.user.role,
+      action:'save_section', entityType:'university', entityId:uid,
+      section:'idies', detail:{ before, after:d }, ip:audit.getIp(req) });
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
+// GET /api/universities/:id/summary — aggregated stats from all campuses
+router.get('/:id/summary', async (req, res, next) => {
+  try {
+    const uid = req.params.id;
+    if (req.user.role !== 'superadmin' && req.user.university_id !== uid) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    const yr = YEAR();
+    const [campuses, students, staff, researchers, finances, labs, salas, idies] = await Promise.all([
+      db.query(`
+        SELECT c.id, c.nome, c.provincia, s.status, s.id as submission_id,
+          (SELECT COUNT(*) FROM section_locks sl WHERE sl.submission_id=s.id) as locked_sections,
+          (SELECT COUNT(*) FROM section_locks sl WHERE sl.submission_id=s.id AND sl.unlock_requested=TRUE) as unlock_requests
+        FROM campuses c
+        LEFT JOIN submissions s ON s.campus_id=c.id AND s.year=$2
+        WHERE c.university_id=$1 ORDER BY c.nome`, [uid, yr]),
       db.query(`SELECT e.grau, SUM(e.homens) AS h, SUM(e.mulheres) AS m
-                FROM estudantes e
-                JOIN submissions s ON s.id=e.submission_id
-                WHERE s.university_id=$1 AND s.year=2024
-                GROUP BY e.grau ORDER BY e.grau`, [uid]),
-      db.query(`SELECT SUM(d.lic_h+d.lic_m+d.mest_h+d.mest_m+d.dout_h+d.dout_m) AS total,
-                       SUM(d.lic_h+d.mest_h+d.dout_h) AS homens,
-                       SUM(d.lic_m+d.mest_m+d.dout_m) AS mulheres
+                FROM estudantes e JOIN submissions s ON s.id=e.submission_id
+                WHERE s.university_id=$1 AND s.year=$2 GROUP BY e.grau ORDER BY e.grau`, [uid, yr]),
+      db.query(`SELECT COALESCE(SUM(d.lic_h+d.lic_m+d.mest_h+d.mest_m+d.dout_h+d.dout_m),0) AS total,
+                       COALESCE(SUM(d.lic_h+d.mest_h+d.dout_h),0) AS homens,
+                       COALESCE(SUM(d.lic_m+d.mest_m+d.dout_m),0) AS mulheres
                 FROM docentes d JOIN submissions s ON s.id=d.submission_id
-                WHERE s.university_id=$1 AND s.year=2024`, [uid]),
-      db.query(`SELECT SUM(i.lic_h+i.lic_m+i.mest_h+i.mest_m+i.dout_h+i.dout_m) AS total
+                WHERE s.university_id=$1 AND s.year=$2`, [uid, yr]),
+      db.query(`SELECT COALESCE(SUM(i.lic_h+i.lic_m+i.mest_h+i.mest_m+i.dout_h+i.dout_m),0) AS total
                 FROM investigadores i JOIN submissions s ON s.id=i.submission_id
-                WHERE s.university_id=$1 AND s.year=2024`, [uid]),
-      db.query(`SELECT SUM(f.oge) AS oge, SUM(f.doacoes) AS doacoes,
-                       SUM(f.creditos) AS creditos, SUM(f.proprias) AS proprias,
-                       SUM(f.func_ensino) AS func_ensino, SUM(f.func_investig) AS func_investig,
-                       SUM(f.func_admin) AS func_admin, SUM(f.sal_docentes) AS sal_docentes,
-                       SUM(f.sal_tecnicos) AS sal_tecnicos
+                WHERE s.university_id=$1 AND s.year=$2`, [uid, yr]),
+      db.query(`SELECT COALESCE(SUM(f.oge),0) AS oge, COALESCE(SUM(f.doacoes),0) AS doacoes,
+                       COALESCE(SUM(f.creditos),0) AS creditos, COALESCE(SUM(f.proprias),0) AS proprias,
+                       COALESCE(SUM(f.func_ensino),0) AS func_ensino, COALESCE(SUM(f.func_investig),0) AS func_investig,
+                       COALESCE(SUM(f.func_admin),0) AS func_admin, COALESCE(SUM(f.sal_docentes),0) AS sal_docentes,
+                       COALESCE(SUM(f.sal_tecnicos),0) AS sal_tecnicos
                 FROM financas f JOIN submissions s ON s.id=f.submission_id
-                WHERE s.university_id=$1 AND s.year=EXTRACT(YEAR FROM NOW())`, [uid]),
-      db.query(`SELECT SUM(il.num_labs) AS total_labs FROM infra_labs il
+                WHERE s.university_id=$1 AND s.year=$2`, [uid, yr]),
+      db.query(`SELECT COALESCE(SUM(il.num_labs),0) AS total_labs FROM infra_labs il
                 JOIN submissions s ON s.id=il.submission_id
-                WHERE s.university_id=$1 AND s.year=EXTRACT(YEAR FROM NOW())`, [uid]),
-      db.query(`SELECT SUM(is2.num_salas) AS total_salas FROM infra_salas is2
+                WHERE s.university_id=$1 AND s.year=$2`, [uid, yr]),
+      db.query(`SELECT COALESCE(SUM(is2.num_salas),0) AS total_salas FROM infra_salas is2
                 JOIN submissions s ON s.id=is2.submission_id
-                WHERE s.university_id=$1 AND s.year=EXTRACT(YEAR FROM NOW())`, [uid]),
+                WHERE s.university_id=$1 AND s.year=$2`, [uid, yr]),
+      db.query('SELECT * FROM university_id_ies WHERE university_id=$1', [uid]),
     ]);
     res.json({
       campuses: campuses.rows,
@@ -72,53 +116,70 @@ router.get('/:id/summary', async (req, res, next) => {
       researchers: researchers.rows[0],
       finances: finances.rows[0],
       infrastructure: { labs: labs.rows[0], salas: salas.rows[0] },
+      idies: idies.rows[0] || null,
     });
   } catch (err) { next(err); }
 });
 
-// POST /api/universities/:id/submit — director submits all campuses to ministry
+// POST /api/universities/:id/submit — director submits to Vice Reitor Admin
 router.post('/:id/submit', async (req, res, next) => {
   try {
     const uid = req.params.id;
     if (req.user.role !== 'superadmin' && req.user.university_id !== uid) {
       return res.status(403).json({ error: 'Forbidden' });
     }
-    const YEAR = new Date().getFullYear();
+    const yr = YEAR();
 
-    // Mark all submissions for this university as submitted
+    // Check all campuses have all 7 sections locked
+    const campusCheck = await db.query(`
+      SELECT c.nome, s.id as submission_id,
+        (SELECT COUNT(*) FROM section_locks sl WHERE sl.submission_id=s.id) as locked_count
+      FROM campuses c
+      LEFT JOIN submissions s ON s.campus_id=c.id AND s.year=$2
+      WHERE c.university_id=$1`, [uid, yr]);
+
+    // Sections that chefes must lock: estudantes, docentes, investigadores, financas, infra, previsao (6 — idies is director's)
+    const REQUIRED_LOCKS = 6;
+    const incomplete = campusCheck.rows.filter(r => !r.submission_id || parseInt(r.locked_count) < REQUIRED_LOCKS);
+    if (incomplete.length > 0) {
+      const names = incomplete.map(r => r.nome).join(', ');
+      return res.status(400).json({
+        error: `Os seguintes campuses ainda não concluíram todas as secções: ${names}. Cada Chefe de Departamento deve marcar as 6 secções como "Concluído" antes da submissão.`,
+        incomplete: incomplete.map(r => ({ nome: r.nome, locked: r.locked_count, required: REQUIRED_LOCKS }))
+      });
+    }
+
+    // Mark all submissions as submitted
     await db.query(
       `UPDATE submissions SET status='submitted', submitted_at=NOW()
-       WHERE university_id=$1 AND year=$2 AND status='draft'`,
-      [uid, YEAR]
+       WHERE university_id=$1 AND year=$2`,
+      [uid, yr]
     );
 
-    // Send email notification
+    // Send email
     const univRes = await db.query('SELECT * FROM universities WHERE id=$1', [uid]);
     const univ = univRes.rows[0] || {};
-    const ADMIN_EMAIL = process.env.VR_EMAIL || process.env.ADMIN_EMAIL || 'vradmin@unilurio.ac.mz';
-
+    const VR_EMAIL = process.env.VR_EMAIL || 'vradmin@unilurio.ac.mz';
     const nodemailer = require('nodemailer');
     if (process.env.SMTP_HOST) {
       const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST, port: parseInt(process.env.SMTP_PORT||'587'),
-        secure: process.env.SMTP_SECURE === 'true',
+        secure: process.env.SMTP_SECURE==='true',
         auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
       });
-      await transporter.sendMail({
+      transporter.sendMail({
         from: process.env.SMTP_FROM || 'aGPLúrio <noreply@unilurio.ac.mz>',
-        to: ADMIN_EMAIL,
-        subject: `Dados submetidos — ${univ.nome} (${YEAR})`,
-        html: `<p>Os dados estatísticos de <strong>${univ.nome}</strong> foram submetidos pelo Director GPL para o ano ${YEAR}.</p><p>Por favor aceda ao sistema aGPLúrio para rever os dados.</p>`,
+        to: VR_EMAIL,
+        subject: `Dados estatísticos submetidos — ${univ.nome} (${yr})`,
+        html: `<p>O Director GPL de <strong>${univ.nome}</strong> submeteu os dados estatísticos do ano ${yr} para revisão.</p><p>Por favor aceda ao sistema aGPLúrio para rever e aprovar os dados.</p>`,
       }).catch(e => console.error('Email error:', e.message));
     }
 
-    // Log
-    const audit = require('../utils/audit');
-    audit.log({ userId: req.user.id, userEmail: req.user.email, userRole: req.user.role,
-      action: 'submit', entityType: 'university', entityId: uid,
-      detail: { university: univ.nome, year: YEAR }, ip: req.socket?.remoteAddress });
+    audit.log({ userId:req.user.id, userEmail:req.user.email, userRole:req.user.role,
+      action:'submit', entityType:'university', entityId:uid,
+      detail:{ university:univ.nome, year:yr }, ip:audit.getIp(req) });
 
-    res.json({ ok: true, message: `Dados de ${univ.nome} submetidos com sucesso` });
+    res.json({ ok:true, message:`Dados de ${univ.nome} submetidos ao Vice Reitor Administrativo com sucesso` });
   } catch (err) { next(err); }
 });
 

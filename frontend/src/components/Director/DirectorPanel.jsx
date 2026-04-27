@@ -92,14 +92,13 @@ export default function DirectorPanel() {
       user.university_id ? universityApi.summary(user.university_id) : Promise.resolve({ data: null }),
       userMgmtApi.list(),
       auditApi.getSummary(),
-    ]).then(([c, u, s, users, audit]) => {
+      user.university_id ? lockApi.getUnlockRequests(user.university_id) : Promise.resolve({ data: [] }),
+    ]).then(([c, u, s, users, audit, unlocks]) => {
       setCampuses(c.data);
       setUnassigned(u.data);
       setSummary(s.data);
       setChefes((users.data||[]).filter(u => u.role === 'chefe_departamento'));
-      // Find pending unlock requests from audit
-      const reqs = (audit.data||[]).filter(a => a.action === 'request_unlock');
-      setUnlockRequests(reqs);
+      setUnlockRequests(unlocks.data||[]);
       setAuditLog(audit.data||[]);
     }).finally(() => setLoading(false));
   };
@@ -109,7 +108,7 @@ export default function DirectorPanel() {
   const handleUnlock = async (submissionId, section) => {
     try {
       await lockApi.unlock(submissionId, section);
-      setUnlockRequests(prev => prev.filter(r => !(r.entity_id === submissionId && r.section === section)));
+      setUnlockRequests(prev => prev.filter(r => !(r.submission_id === submissionId && r.section === section)));
       alert(`Secção "${section}" desbloqueada com sucesso.`);
     } catch(e) { console.error(e); }
   };
@@ -205,8 +204,8 @@ export default function DirectorPanel() {
               <div style={{ fontSize:14,fontWeight:500 }}>Campuses / Departamentos</div>
               <div style={{ display:'flex',gap:8 }}>
                 <button onClick={()=>setModal('new')} style={{ fontSize:13,padding:'7px 16px',background:'#185FA5',color:'#fff',border:'none',borderRadius:8,cursor:'pointer' }}>+ Novo campus</button>
-                <button onClick={handleSubmit} disabled={submitting||pending===0} style={{ fontSize:13,padding:'7px 16px',background:pending===0?'#ccc':'#3B6D11',color:'#fff',border:'none',borderRadius:8,cursor:'pointer' }} title="Submete todos os dados ao VR Admin">
-                  {submitting?'A submeter...':'Submeter ao Ministério'}
+                <button onClick={handleSubmit} disabled={submitting||pending===0} style={{ fontSize:13,padding:'7px 16px',background:pending===0?'#ccc':'#3B6D11',color:'#fff',border:'none',borderRadius:8,cursor:'pointer' }} title="Submete todos os dados ao Vice Reitor Administrativo">
+                  {submitting?'A submeter...':'Submeter ao Vice Reitor Administrativo'}
                 </button>
               </div>
             </div>
@@ -305,7 +304,7 @@ export default function DirectorPanel() {
                 ))}
               </div>
               <div style={{ marginTop:12,fontSize:12,color:'var(--color-text-secondary)' }}>
-                O estado muda para <strong>Submetido</strong> quando o Director GPL clica em "Submeter ao Ministério" no separador Campuses.
+                O estado muda para <strong>Submetido</strong> quando o Director GPL clica em "Submeter ao Vice Reitor Administrativo" no separador Campuses.
               </div>
             </div>
           </>)}
@@ -370,11 +369,15 @@ export default function DirectorPanel() {
                   <tbody>
                     {unlockRequests.map((r,i)=>(
                       <tr key={i} style={{ borderBottom:'0.5px solid var(--color-border-tertiary)' }}>
-                        <td style={{ padding:'10px 14px' }}>{r.user_email}</td>
+                        <td style={{ padding:'10px 14px' }}>
+                          <div style={{ fontWeight:500 }}>{r.requester_nome||'—'}</div>
+                          <div style={{ fontSize:11,color:'var(--color-text-secondary)' }}>{r.requester_email}</div>
+                          <div style={{ fontSize:11,color:'var(--color-text-secondary)' }}>{r.campus_nome}</div>
+                        </td>
                         <td style={{ padding:'10px 14px',fontWeight:500 }}>{r.section}</td>
                         <td style={{ padding:'10px 14px',fontSize:12,color:'var(--color-text-secondary)' }}>{new Date(r.created_at).toLocaleString('pt-MZ')}</td>
                         <td style={{ padding:'10px 14px' }}>
-                          <button onClick={()=>handleUnlock(r.entity_id, r.section)} style={{ fontSize:12,padding:'5px 14px',background:'#3B6D11',color:'#fff',border:'none',borderRadius:6,cursor:'pointer' }}>
+                          <button onClick={()=>handleUnlock(r.submission_id, r.section)} style={{ fontSize:12,padding:'5px 14px',background:'#3B6D11',color:'#fff',border:'none',borderRadius:6,cursor:'pointer' }}>
                             Desbloquear
                           </button>
                         </td>

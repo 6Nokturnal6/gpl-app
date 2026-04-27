@@ -178,3 +178,34 @@ CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at DESC);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS deactivated_at TIMESTAMPTZ;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS deactivated_by UUID REFERENCES users(id);
+
+-- University-level ID IES (one per university, filled by Director GPL)
+CREATE TABLE IF NOT EXISTS university_id_ies (
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  university_id UUID NOT NULL REFERENCES universities(id) ON DELETE CASCADE,
+  nome          TEXT,
+  sigla         TEXT,
+  nuit          TEXT,
+  ano_inicio    INTEGER,
+  provincia     TEXT,
+  distrito      TEXT,
+  website       TEXT,
+  contacto      TEXT,
+  email         TEXT,
+  responsavel   TEXT,
+  funcao        TEXT,
+  email_resp    TEXT,
+  updated_at    TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(university_id)
+);
+
+-- Section completion stored in DB (drives progress %)
+-- section_locks already tracks this — we use locked=true as "concluido"
+-- No new table needed; progress is computed from section_locks count
+
+-- Ensure submissions always get university_id from user
+-- (migration helper — update existing submissions that have null university_id)
+UPDATE submissions s
+SET university_id = u.university_id
+FROM users u
+WHERE s.user_id = u.id AND s.university_id IS NULL AND u.university_id IS NOT NULL;

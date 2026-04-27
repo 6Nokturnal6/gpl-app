@@ -108,7 +108,11 @@ export default function SuperAdminDashboard() {
       setConfirm(null); load();
     }});
   };
-  const doChangeRole = async (id, role) => { await userMgmtApi.changeRole(id, role); load(); };
+  const doChangeRole = async (id, role) => {
+    await userMgmtApi.changeRole(id, role);
+    load();
+    alert('Papel alterado com sucesso. O utilizador deverá fazer logout e login novamente para que as alterações tenham efeito.');
+  };
   const doCreateUniv = async () => {
     if (!univForm.nome.trim()) return;
     setUnivSaving(true);

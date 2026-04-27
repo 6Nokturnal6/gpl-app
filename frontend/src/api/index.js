@@ -80,6 +80,7 @@ export const universityApi = {
 
 export const lockApi = {
   getLocks: (submissionId) => api.get(`/locks/${submissionId}`),
+  getUnlockRequests: (universityId) => api.get(`/locks/university/${universityId}/requests`),
   lock: (submissionId, section) => api.post(`/locks/${submissionId}/${section}`),
   requestUnlock: (submissionId, section) => api.post(`/locks/${submissionId}/${section}/request-unlock`),
   unlock: (submissionId, section) => api.delete(`/locks/${submissionId}/${section}`),

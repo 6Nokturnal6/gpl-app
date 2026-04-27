@@ -265,8 +265,8 @@ export default function DirectorPanel() {
                 ['Docentes', ((parseInt(summary?.staff?.homens)||0)+(parseInt(summary?.staff?.mulheres)||0)).toLocaleString()],
                 ['Investigadores', (parseInt(summary?.researchers?.total)||0).toLocaleString()],
                 ['Financiamento (MT×10³)', ((parseFloat(summary?.finances?.oge)||0)+(parseFloat(summary?.finances?.doacoes)||0)+(parseFloat(summary?.finances?.creditos)||0)+(parseFloat(summary?.finances?.proprias)||0)).toLocaleString('pt-MZ')],
-                ['Laboratórios', parseInt(summary?.infrastructure?.labs?.total_labs)||0],
-                ['Salas de aulas', parseInt(summary?.infrastructure?.salas?.total_salas)||0],
+                ['Laboratórios', (parseInt(summary?.infrastructure?.labs?.total_labs)||0).toLocaleString()],
+                ['Salas de aulas', (parseInt(summary?.infrastructure?.salas?.total_salas)||0).toLocaleString()],
               ].map(([l,v])=>(
                 <div key={l} style={{ background:'var(--color-background-secondary)',borderRadius:8,padding:'12px 16px' }}>
                   <div style={{ fontSize:11,color:'var(--color-text-secondary)',marginBottom:4 }}>{l}</div>
@@ -284,9 +284,9 @@ export default function DirectorPanel() {
                   {(summary?.students||[]).map((r,i)=>(
                     <tr key={i} style={{ borderBottom:'0.5px solid var(--color-border-tertiary)',background:i%2===1?'var(--color-background-secondary)':'transparent' }}>
                       <td style={{ padding:'8px 12px',fontWeight:500 }}>{r.grau||'—'}</td>
-                      <td style={{ padding:'8px 12px' }}>{Number(r.h||0).toLocaleString()}</td>
-                      <td style={{ padding:'8px 12px' }}>{Number(r.m||0).toLocaleString()}</td>
-                      <td style={{ padding:'8px 12px',fontWeight:500,color:'#185FA5' }}>{(parseInt(r.h||0)+parseInt(r.m||0)).toLocaleString()}</td>
+                      <td style={{ padding:'8px 12px' }}>{(parseInt(r.h)||0).toLocaleString()}</td>
+                      <td style={{ padding:'8px 12px' }}>{(parseInt(r.m)||0).toLocaleString()}</td>
+                      <td style={{ padding:'8px 12px',fontWeight:500,color:'#185FA5' }}>{((parseInt(r.h)||0)+(parseInt(r.m)||0)).toLocaleString()}</td>
                     </tr>
                   ))}
                   {(!summary?.students||summary.students.length===0) && <tr><td colSpan={4} style={{ padding:24,textAlign:'center',color:'var(--color-text-secondary)' }}>Sem dados de estudantes ainda</td></tr>}

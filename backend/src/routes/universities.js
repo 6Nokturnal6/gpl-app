@@ -75,6 +75,40 @@ router.get('/:id/summary', async (req, res, next) => {
       return res.status(403).json({ error: 'Forbidden' });
     }
     const yr = YEAR();
+
+    // First: get all campus IDs for this university
+    const campusRes = await db.query('SELECT id FROM campuses WHERE university_id=$1', [uid]);
+    const campusIds = campusRes.rows.map(r => r.id);
+
+    // Get all submission IDs for this university
+    // Join via university_id OR via campus_id (handles submissions created before university_id was set)
+    let subIds = [];
+    if (campusIds.length > 0) {
+      const campusPh = campusIds.map((_,i) => `$${i+2}`).join(',');
+      const subRes = await db.query(
+        `SELECT DISTINCT id FROM submissions
+         WHERE year=$1 AND (university_id=$${campusIds.length+2} OR campus_id IN (${campusPh}))`,
+        [yr, ...campusIds, uid]
+      );
+      subIds = subRes.rows.map(r => r.id);
+    } else {
+      const subRes = await db.query(
+        'SELECT DISTINCT id FROM submissions WHERE year=$1 AND university_id=$2',
+        [yr, uid]
+      );
+      subIds = subRes.rows.map(r => r.id);
+    }
+
+    // Fix: update any submissions missing university_id
+    if (campusIds.length > 0) {
+      const campusPh = campusIds.map((_,i) => `$${i+2}`).join(',');
+      await db.query(
+        `UPDATE submissions SET university_id=$1
+         WHERE campus_id IN (${campusPh}) AND university_id IS NULL`,
+        [uid, ...campusIds]
+      );
+    }
+
     const [campuses, students, staff, researchers, finances, labs, salas, idies] = await Promise.all([
       db.query(`
         SELECT c.id, c.nome, c.provincia, s.status, s.id as submission_id,
@@ -83,32 +117,56 @@ router.get('/:id/summary', async (req, res, next) => {
         FROM campuses c
         LEFT JOIN submissions s ON s.campus_id=c.id AND s.year=$2
         WHERE c.university_id=$1 ORDER BY c.nome`, [uid, yr]),
-      db.query(`SELECT e.grau, SUM(e.homens) AS h, SUM(e.mulheres) AS m
-                FROM estudantes e JOIN submissions s ON s.id=e.submission_id
-                WHERE s.university_id=$1 AND s.year=$2 GROUP BY e.grau ORDER BY e.grau`, [uid, yr]),
-      db.query(`SELECT COALESCE(SUM(d.lic_h+d.lic_m+d.mest_h+d.mest_m+d.dout_h+d.dout_m),0) AS total,
-                       COALESCE(SUM(d.lic_h+d.mest_h+d.dout_h),0) AS homens,
-                       COALESCE(SUM(d.lic_m+d.mest_m+d.dout_m),0) AS mulheres
-                FROM docentes d JOIN submissions s ON s.id=d.submission_id
-                WHERE s.university_id=$1 AND s.year=$2`, [uid, yr]),
-      db.query(`SELECT COALESCE(SUM(i.lic_h+i.lic_m+i.mest_h+i.mest_m+i.dout_h+i.dout_m),0) AS total
-                FROM investigadores i JOIN submissions s ON s.id=i.submission_id
-                WHERE s.university_id=$1 AND s.year=$2`, [uid, yr]),
-      db.query(`SELECT COALESCE(SUM(f.oge),0) AS oge, COALESCE(SUM(f.doacoes),0) AS doacoes,
-                       COALESCE(SUM(f.creditos),0) AS creditos, COALESCE(SUM(f.proprias),0) AS proprias,
-                       COALESCE(SUM(f.func_ensino),0) AS func_ensino, COALESCE(SUM(f.func_investig),0) AS func_investig,
-                       COALESCE(SUM(f.func_admin),0) AS func_admin, COALESCE(SUM(f.sal_docentes),0) AS sal_docentes,
-                       COALESCE(SUM(f.sal_tecnicos),0) AS sal_tecnicos
-                FROM financas f JOIN submissions s ON s.id=f.submission_id
-                WHERE s.university_id=$1 AND s.year=$2`, [uid, yr]),
-      db.query(`SELECT COALESCE(SUM(il.num_labs),0) AS total_labs FROM infra_labs il
-                JOIN submissions s ON s.id=il.submission_id
-                WHERE s.university_id=$1 AND s.year=$2`, [uid, yr]),
-      db.query(`SELECT COALESCE(SUM(is2.num_salas),0) AS total_salas FROM infra_salas is2
-                JOIN submissions s ON s.id=is2.submission_id
-                WHERE s.university_id=$1 AND s.year=$2`, [uid, yr]),
+
+      subIds.length ? db.query(
+        `SELECT e.grau,
+                COALESCE(SUM(e.homens),0) AS h,
+                COALESCE(SUM(e.mulheres),0) AS m
+         FROM estudantes e
+         WHERE e.submission_id = ANY($1::uuid[])
+         GROUP BY e.grau ORDER BY e.grau`,
+        [subIds]
+      ) : Promise.resolve({ rows: [] }),
+
+      subIds.length ? db.query(
+        `SELECT COALESCE(SUM(d.lic_h+d.lic_m+d.mest_h+d.mest_m+d.dout_h+d.dout_m),0) AS total,
+                COALESCE(SUM(d.lic_h+d.mest_h+d.dout_h),0) AS homens,
+                COALESCE(SUM(d.lic_m+d.mest_m+d.dout_m),0) AS mulheres
+         FROM docentes d WHERE d.submission_id = ANY($1::uuid[])`,
+        [subIds]
+      ) : Promise.resolve({ rows: [{ total:0, homens:0, mulheres:0 }] }),
+
+      subIds.length ? db.query(
+        `SELECT COALESCE(SUM(i.lic_h+i.lic_m+i.mest_h+i.mest_m+i.dout_h+i.dout_m),0) AS total
+         FROM investigadores i WHERE i.submission_id = ANY($1::uuid[])`,
+        [subIds]
+      ) : Promise.resolve({ rows: [{ total:0 }] }),
+
+      subIds.length ? db.query(
+        `SELECT COALESCE(SUM(f.oge),0) AS oge, COALESCE(SUM(f.doacoes),0) AS doacoes,
+                COALESCE(SUM(f.creditos),0) AS creditos, COALESCE(SUM(f.proprias),0) AS proprias,
+                COALESCE(SUM(f.func_ensino),0) AS func_ensino, COALESCE(SUM(f.func_investig),0) AS func_investig,
+                COALESCE(SUM(f.func_admin),0) AS func_admin, COALESCE(SUM(f.sal_docentes),0) AS sal_docentes,
+                COALESCE(SUM(f.sal_tecnicos),0) AS sal_tecnicos
+         FROM financas f WHERE f.submission_id = ANY($1::uuid[])`,
+        [subIds]
+      ) : Promise.resolve({ rows: [{}] }),
+
+      subIds.length ? db.query(
+        `SELECT COALESCE(SUM(il.num_labs),0) AS total_labs
+         FROM infra_labs il WHERE il.submission_id = ANY($1::uuid[])`,
+        [subIds]
+      ) : Promise.resolve({ rows: [{ total_labs:0 }] }),
+
+      subIds.length ? db.query(
+        `SELECT COALESCE(SUM(is2.num_salas),0) AS total_salas
+         FROM infra_salas is2 WHERE is2.submission_id = ANY($1::uuid[])`,
+        [subIds]
+      ) : Promise.resolve({ rows: [{ total_salas:0 }] }),
+
       db.query('SELECT * FROM university_id_ies WHERE university_id=$1', [uid]),
     ]);
+
     res.json({
       campuses: campuses.rows,
       students: students.rows,

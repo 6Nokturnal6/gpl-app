@@ -242,3 +242,35 @@ router.post('/:id/submit', async (req, res, next) => {
 });
 
 module.exports = router;
+
+// POST /api/universities/backfill — fix submissions with null university_id
+// Call this once after update to fix existing data
+router.post('/backfill', requireAdmin, async (req, res, next) => {
+  try {
+    // Fix submissions where campus has a university but submission doesn't
+    const r = await db.query(`
+      UPDATE submissions s
+      SET university_id = c.university_id
+      FROM campuses c
+      WHERE s.campus_id = c.id
+        AND s.university_id IS NULL
+        AND c.university_id IS NOT NULL
+      RETURNING s.id`);
+
+    // Fix submissions where user has a university but submission doesn't
+    const r2 = await db.query(`
+      UPDATE submissions s
+      SET university_id = u.university_id
+      FROM users u
+      WHERE s.user_id = u.id
+        AND s.university_id IS NULL
+        AND u.university_id IS NOT NULL
+      RETURNING s.id`);
+
+    res.json({
+      ok: true,
+      fixed_via_campus: r.rows.length,
+      fixed_via_user: r2.rows.length
+    });
+  } catch (err) { next(err); }
+});

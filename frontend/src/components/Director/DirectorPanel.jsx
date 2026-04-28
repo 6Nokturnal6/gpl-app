@@ -179,7 +179,7 @@ export default function DirectorPanel() {
 
       {/* Tabs */}
       <div style={{ background:'var(--color-background-primary)',borderBottom:'0.5px solid var(--color-border-tertiary)',padding:'0 24px',display:'flex' }}>
-        {tabBtn('campuses','Campuses / Depts')}
+        {tabBtn('campuses','Campi / Departamentos')}
         {tabBtn('summary','Sumário Consolidado')}
         {tabBtn('chefes','Chefes Dept.')}
         {tabBtn('unlocks','Pedidos de desbloqueio',unlockCount)}
@@ -192,7 +192,7 @@ export default function DirectorPanel() {
           {/* ── CAMPUSES TAB ── */}
           {tab==='campuses' && (<>
             <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(130px,1fr))',gap:12,marginBottom:20 }}>
-              {[['Total campuses',campuses.length],['Submetidos',submitted,'#3B6D11'],['Por submeter',pending,'#854F0B'],['Chefes disponíveis',unassigned.length]].map(([l,v,c])=>(
+              {[['Total de campi',campuses.length],['Submetidos',submitted,'#3B6D11'],['Por submeter',pending,'#854F0B'],['Chefes disponíveis',unassigned.length]].map(([l,v,c])=>(
                 <div key={l} style={{ background:'var(--color-background-secondary)',borderRadius:8,padding:'12px 16px' }}>
                   <div style={{ fontSize:11,color:'var(--color-text-secondary)',marginBottom:4 }}>{l}</div>
                   <div style={{ fontSize:20,fontWeight:500,color:c||'var(--color-text-primary)' }}>{v}</div>
@@ -201,7 +201,7 @@ export default function DirectorPanel() {
             </div>
 
             <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14,flexWrap:'wrap',gap:8 }}>
-              <div style={{ fontSize:14,fontWeight:500 }}>Campuses / Departamentos</div>
+              <div style={{ fontSize:14,fontWeight:500 }}>Campi / Departamentos</div>
               <div style={{ display:'flex',gap:8 }}>
                 <button onClick={()=>setModal('new')} style={{ fontSize:13,padding:'7px 16px',background:'#185FA5',color:'#fff',border:'none',borderRadius:8,cursor:'pointer' }}>+ Novo campus</button>
                 <button onClick={handleSubmit} disabled={submitting||pending===0} style={{ fontSize:13,padding:'7px 16px',background:pending===0?'#ccc':'#3B6D11',color:'#fff',border:'none',borderRadius:8,cursor:'pointer' }} title="Submete todos os dados ao Vice Reitor Administrativo">
@@ -251,7 +251,7 @@ export default function DirectorPanel() {
                       </td>
                     </tr>
                   ))}
-                  {campuses.length===0 && <tr><td colSpan={5} style={{ padding:32,textAlign:'center',color:'var(--color-text-secondary)' }}>Nenhum campus criado. Clique em "+ Novo campus".</td></tr>}
+                  {campuses.length===0 && <tr><td colSpan={5} style={{ padding:32,textAlign:'center',color:'var(--color-text-secondary)' }}>Nenhum campus criado ainda. Clique em "+ Novo campus".</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -275,7 +275,7 @@ export default function DirectorPanel() {
               ))}
             </div>
             <div style={{ background:'var(--color-background-primary)',border:'0.5px solid var(--color-border-tertiary)',borderRadius:12,padding:20,marginBottom:16 }}>
-              <div style={{ fontSize:13,fontWeight:500,marginBottom:14 }}>Estudantes por grau — todos os campuses ({CURRENT_YEAR})</div>
+              <div style={{ fontSize:13,fontWeight:500,marginBottom:14 }}>Estudantes por grau — todos os campi ({CURRENT_YEAR})</div>
               <table style={{ width:'100%',borderCollapse:'collapse',fontSize:13 }}>
                 <thead><tr style={{ background:'var(--color-background-secondary)' }}>
                   {['Grau','Homens','Mulheres','Total'].map(h=><th key={h} style={{ padding:'8px 12px',textAlign:'left',fontSize:12,fontWeight:500,color:'var(--color-text-secondary)',borderBottom:'0.5px solid var(--color-border-tertiary)' }}>{h}</th>)}
@@ -294,7 +294,7 @@ export default function DirectorPanel() {
               </table>
             </div>
             <div style={{ background:'var(--color-background-primary)',border:'0.5px solid var(--color-border-tertiary)',borderRadius:12,padding:20 }}>
-              <div style={{ fontSize:13,fontWeight:500,marginBottom:12 }}>Estado dos campuses</div>
+              <div style={{ fontSize:13,fontWeight:500,marginBottom:12 }}>Estado dos campi</div>
               <div style={{ display:'flex',flexWrap:'wrap',gap:8 }}>
                 {(summary?.campuses||[]).map(c=>(
                   <div key={c.nome} style={{ padding:'8px 14px',borderRadius:8,border:'0.5px solid var(--color-border-tertiary)',background:'var(--color-background-secondary)' }}>
@@ -304,7 +304,7 @@ export default function DirectorPanel() {
                 ))}
               </div>
               <div style={{ marginTop:12,fontSize:12,color:'var(--color-text-secondary)' }}>
-                O estado muda para <strong>Submetido</strong> quando o Director GPL clica em "Submeter ao Vice Reitor Administrativo" no separador Campuses.
+                O estado muda para <strong>Submetido</strong> quando o Director GPL clica em "Submeter ao Vice Reitor Administrativo" no separador Campi.
               </div>
             </div>
           </>)}
@@ -375,7 +375,7 @@ export default function DirectorPanel() {
                           <div style={{ fontSize:11,color:'var(--color-text-secondary)' }}>{r.campus_nome}</div>
                         </td>
                         <td style={{ padding:'10px 14px',fontWeight:500 }}>{r.section}</td>
-                        <td style={{ padding:'10px 14px',fontSize:12,color:'var(--color-text-secondary)' }}>{new Date(r.created_at).toLocaleString('pt-MZ')}</td>
+                        <td style={{ padding:'10px 14px',fontSize:12,color:'var(--color-text-secondary)' }}>{r.unlock_requested_at ? new Date(r.unlock_requested_at).toLocaleString('pt-MZ') : r.locked_at ? new Date(r.locked_at).toLocaleString('pt-MZ') : '—'}</td>
                         <td style={{ padding:'10px 14px' }}>
                           <button onClick={()=>handleUnlock(r.submission_id, r.section)} style={{ fontSize:12,padding:'5px 14px',background:'#3B6D11',color:'#fff',border:'none',borderRadius:6,cursor:'pointer' }}>
                             Desbloquear
@@ -402,8 +402,8 @@ export default function DirectorPanel() {
                 <tbody>
                   {auditLog.slice(0,100).map((a,i)=>(
                     <tr key={i} style={{ borderBottom:'0.5px solid var(--color-border-tertiary)',background:i%2===1?'var(--color-background-secondary)':'transparent' }}>
-                      <td style={{ padding:'8px 12px',whiteSpace:'nowrap',color:'var(--color-text-secondary)',fontSize:11 }}>{new Date(a.created_at).toLocaleString('pt-MZ')}</td>
-                      <td style={{ padding:'8px 12px',fontSize:12 }}>{a.user_email||'—'}</td>
+                      <td style={{ padding:'8px 12px',whiteSpace:'nowrap',color:'var(--color-text-secondary)',fontSize:11 }}>{a.created_at ? new Date(a.created_at).toLocaleString('pt-MZ') : '—'}</td>
+                      <td style={{ padding:'8px 12px',fontSize:12 }}>{a.user_nome||a.user_email||'—'}</td>
                       <td style={{ padding:'8px 12px',fontWeight:500 }}>{a.action}</td>
                       <td style={{ padding:'8px 12px',color:'var(--color-text-secondary)' }}>{a.section||'—'}</td>
                     </tr>

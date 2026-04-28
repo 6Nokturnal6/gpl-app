@@ -16,11 +16,12 @@ function buildPdf(data, res) {
   const NEXT_YEAR = YEAR + 1;
   const DATE_STR = NOW.toLocaleDateString('pt-MZ', { dateStyle: 'long' });
 
-  // Use bufferPages:true so we can stamp page numbers AFTER all content is written
+  // bufferPages:true lets us go back and stamp page numbers after all content
+  // We must call doc.flushPages() before doc.end() to avoid double-streaming
   const doc = new PDFDocument({ size: 'A4', margin: 40, bufferPages: true });
   doc.pipe(res);
 
-  const W = doc.page.width - 80; // 535
+  const W = doc.page.width - 80;
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -32,7 +33,6 @@ function buildPdf(data, res) {
     doc.fillColor('#B5D4F4').fontSize(8).font('Helvetica')
       .text('Sistema de Recolha de Dados do Ensino Superior de Moçambique', 52, 52);
     doc.restore();
-    // position cursor below header
     doc.y = 90;
   }
 
@@ -63,10 +63,8 @@ function buildPdf(data, res) {
   function infoRow(label, value) {
     checkPage(16);
     const y = doc.y;
-    doc.fillColor(MID).fontSize(9).font('Helvetica')
-      .text(label + ':', 40, y, { width: 140 });
-    doc.fillColor(DARK).fontSize(9).font('Helvetica-Bold')
-      .text(String(value || '—'), 185, y, { width: W - 145 });
+    doc.fillColor(MID).fontSize(9).font('Helvetica').text(label + ':', 40, y, { width: 140 });
+    doc.fillColor(DARK).fontSize(9).font('Helvetica-Bold').text(String(value || '—'), 185, y, { width: W - 145 });
     doc.font('Helvetica');
     doc.y = y + 16;
   }
@@ -120,8 +118,11 @@ function buildPdf(data, res) {
     const h = isTotal ? 18 : 15;
     const numVal = parseFloat(value) || 0;
     const formatted = numVal.toLocaleString('pt-MZ') + ' MT×10³';
-    if (isTotal) doc.rect(40, y, W, h).fill(LIGHT_BLUE);
-    else { if (y % 28 < 15) doc.rect(40, y, W, h).fill(GRAY); doc.rect(40, y, W, h).stroke(BORDER); }
+    if (isTotal) {
+      doc.rect(40, y, W, h).fill(LIGHT_BLUE);
+    } else {
+      doc.rect(40, y, W, h).stroke(BORDER);
+    }
     doc.fillColor(isTotal ? BLUE : DARK).fontSize(9)
       .font(isTotal ? 'Helvetica-Bold' : 'Helvetica')
       .text(label, 44, y + (isTotal ? 5 : 3), { width: W - 120 });
@@ -131,39 +132,34 @@ function buildPdf(data, res) {
     doc.font('Helvetica');
   }
 
-  // ── COVER PAGE (page 1) ──────────────────────────────────────────────────────
+  // ── COVER PAGE ───────────────────────────────────────────────────────────────
   drawHeader();
   const d = data.idies || {};
+  const campusNome = data.campusNome || null; // set for per-campus exports
 
-  // Institution name block
   doc.fillColor(BLUE).fontSize(20).font('Helvetica-Bold')
     .text(d.nome || 'Instituição de Ensino Superior', 40, doc.y, { width: W });
-  if (d.sigla) {
-    doc.fillColor(MID).fontSize(13).font('Helvetica').text(d.sigla, { width: W });
+  if (d.sigla) doc.fillColor(MID).fontSize(13).font('Helvetica').text(d.sigla, { width: W });
+  if (campusNome) {
+    doc.fillColor(DARK).fontSize(13).font('Helvetica').text(`Campus: ${campusNome}`, { width: W });
   }
-  doc.moveDown(1);
-  doc.rect(40, doc.y, W, 0.5).fill(BORDER);
-  doc.moveDown(0.8);
-
-  [
-    ['NUIT', d.nuit],
-    ['Ano de início', d.ano_inicio],
-    ['Província', d.provincia],
-    ['Distrito', d.distrito],
-    ['Website', d.website],
-    ['Contacto', d.contacto],
-    ['Email', d.email],
-  ].forEach(([l, v]) => infoRow(l, v));
-
   doc.moveDown(0.8);
   doc.rect(40, doc.y, W, 0.5).fill(BORDER);
   doc.moveDown(0.6);
+
+  [['NUIT', d.nuit], ['Ano de início', d.ano_inicio], ['Província', d.provincia],
+   ['Distrito', d.distrito], ['Website', d.website], ['Contacto', d.contacto], ['Email', d.email]]
+    .forEach(([l, v]) => infoRow(l, v));
+
+  doc.moveDown(0.6);
+  doc.rect(40, doc.y, W, 0.5).fill(BORDER);
+  doc.moveDown(0.4);
   doc.fillColor(MID).fontSize(9).font('Helvetica-Bold').text('Responsável pelo preenchimento');
   doc.moveDown(0.3);
   [['Nome', d.responsavel], ['Função', d.funcao], ['Email', d.email_resp]]
     .forEach(([l, v]) => infoRow(l, v));
 
-  doc.moveDown(2);
+  doc.moveDown(1.5);
   doc.fillColor('#aaa').fontSize(8).font('Helvetica')
     .text(`Gerado em ${DATE_STR} via ${APP}`, { align: 'center', width: W });
 
@@ -177,7 +173,7 @@ function buildPdf(data, res) {
     {label:'Total',w:42,align:'center',total:true},
   ];
   tableHeader(estCols);
-  let tH=0,tM=0;
+  let tH=0, tM=0;
   (data.estudantes||[]).forEach((r,i) => {
     const h=parseInt(r.homens)||0, m=parseInt(r.mulheres)||0;
     tH+=h; tM+=m;
@@ -197,7 +193,7 @@ function buildPdf(data, res) {
   ];
   tableHeader(docCols);
   (data.docentes||[]).forEach((r,i) => {
-    const tot=(r.lic_h||0)+(r.lic_m||0)+(r.mest_h||0)+(r.mest_m||0)+(r.dout_h||0)+(r.dout_m||0);
+    const tot=(parseInt(r.lic_h)||0)+(parseInt(r.lic_m)||0)+(parseInt(r.mest_h)||0)+(parseInt(r.mest_m)||0)+(parseInt(r.dout_h)||0)+(parseInt(r.dout_m)||0);
     tableRow(docCols,[r.regime==='tempo_inteiro'?'T.Inteiro':'T.Parcial',r.provincia,r.nacionalidade,r.lic_h||0,r.lic_m||0,r.mest_h||0,r.mest_m||0,r.dout_h||0,r.dout_m||0,tot],i%2===1);
   });
 
@@ -213,7 +209,7 @@ function buildPdf(data, res) {
   ];
   tableHeader(invCols);
   (data.investigadores||[]).forEach((r,i) => {
-    const tot=(r.lic_h||0)+(r.lic_m||0)+(r.mest_h||0)+(r.mest_m||0)+(r.dout_h||0)+(r.dout_m||0);
+    const tot=(parseInt(r.lic_h)||0)+(parseInt(r.lic_m)||0)+(parseInt(r.mest_h)||0)+(parseInt(r.mest_m)||0)+(parseInt(r.dout_h)||0)+(parseInt(r.dout_m)||0);
     tableRow(invCols,[r.regime==='tempo_inteiro'?'T.Inteiro':'T.Parcial',r.nacionalidade,r.lic_h||0,r.lic_m||0,r.mest_h||0,r.mest_m||0,r.dout_h||0,r.dout_m||0,tot],i%2===1);
   });
 
@@ -225,9 +221,8 @@ function buildPdf(data, res) {
   finRow('Doações (internas e externas)', fin.doacoes);
   finRow('Créditos', fin.creditos);
   finRow('Receitas próprias', fin.proprias);
-  const totalFund = (parseFloat(fin.oge)||0)+(parseFloat(fin.doacoes)||0)+(parseFloat(fin.creditos)||0)+(parseFloat(fin.proprias)||0);
+  const totalFund=(parseFloat(fin.oge)||0)+(parseFloat(fin.doacoes)||0)+(parseFloat(fin.creditos)||0)+(parseFloat(fin.proprias)||0);
   finRow('Total financiamento', totalFund, true);
-
   doc.moveDown(0.8);
   subTitle('Quadro 3 – Despesas correntes');
   finRow('Ensino', fin.func_ensino);
@@ -235,44 +230,32 @@ function buildPdf(data, res) {
   finRow('Administração', fin.func_admin);
   finRow('Salários – Docentes', fin.sal_docentes);
   finRow('Salários – Técnicos Administrativos', fin.sal_tecnicos);
-  const totalDesp = (parseFloat(fin.func_ensino)||0)+(parseFloat(fin.func_investig)||0)+(parseFloat(fin.func_admin)||0)+(parseFloat(fin.sal_docentes)||0)+(parseFloat(fin.sal_tecnicos)||0);
+  const totalDesp=(parseFloat(fin.func_ensino)||0)+(parseFloat(fin.func_investig)||0)+(parseFloat(fin.func_admin)||0)+(parseFloat(fin.sal_docentes)||0)+(parseFloat(fin.sal_tecnicos)||0);
   finRow('Total despesas', totalDesp, true);
 
   // ── INFRAESTRUTURA ───────────────────────────────────────────────────────────
   newSection(`D. Infraestruturas — ${YEAR}`);
   subTitle('Quadro 1.1 – Laboratórios em funcionamento');
-  const labCols = [
-    {label:'Nome do laboratório',w:148},{label:'Área',w:86},
-    {label:'Província',w:68},{label:'Distrito',w:68},{label:'N.º',w:45,align:'center',total:true},
-  ];
+  const labCols=[{label:'Nome do laboratório',w:148},{label:'Área',w:86},{label:'Província',w:68},{label:'Distrito',w:68},{label:'N.º',w:45,align:'center',total:true}];
   tableHeader(labCols);
-  (data.infra?.labs||[]).forEach((r,i) => tableRow(labCols,[r.nome,r.area,r.provincia,r.distrito,r.num_labs||0],i%2===1));
+  (data.infra?.labs||[]).forEach((r,i)=>tableRow(labCols,[r.nome,r.area,r.provincia,r.distrito,r.num_labs||0],i%2===1));
   totalRow(labCols,['Total','','','',(data.infra?.labs||[]).reduce((a,r)=>a+(parseInt(r.num_labs)||0),0)]);
-
   doc.moveDown(0.6);
   subTitle('Quadro 1.2 – Salas de aulas');
-  const salaCols = [
-    {label:'Unidade Orgânica',w:175},{label:'Província',w:78},
-    {label:'Grau',w:100},{label:'N.º salas',w:62,align:'center',total:true},
-  ];
+  const salaCols=[{label:'Unidade Orgânica',w:175},{label:'Província',w:78},{label:'Grau',w:100},{label:'N.º salas',w:62,align:'center',total:true}];
   tableHeader(salaCols);
-  (data.infra?.salas||[]).forEach((r,i) => tableRow(salaCols,[r.unidade,r.provincia,r.grau,r.num_salas||0],i%2===1));
+  (data.infra?.salas||[]).forEach((r,i)=>tableRow(salaCols,[r.unidade,r.provincia,r.grau,r.num_salas||0],i%2===1));
   totalRow(salaCols,['Total','','',(data.infra?.salas||[]).reduce((a,r)=>a+(parseInt(r.num_salas)||0),0)]);
 
   // ── PREVISÃO ─────────────────────────────────────────────────────────────────
   newSection(`Previsão / Preliminar para ${NEXT_YEAR}`);
-  subTitle(`Estudantes previstos por curso, grau e género`);
-  const prevCols = [
-    {label:'Nome do curso',w:128},{label:'Dur.',w:36,align:'center'},
-    {label:'Área',w:78},{label:'Grau',w:76},{label:'Província',w:62},
-    {label:'H',w:28,align:'center'},{label:'M',w:28,align:'center'},
-    {label:'Total',w:39,align:'center',total:true},
-  ];
+  subTitle('Estudantes previstos por curso, grau e género');
+  const prevCols=[{label:'Nome do curso',w:128},{label:'Dur.',w:36,align:'center'},{label:'Área',w:78},{label:'Grau',w:76},{label:'Província',w:62},{label:'H',w:28,align:'center'},{label:'M',w:28,align:'center'},{label:'Total',w:39,align:'center',total:true}];
   tableHeader(prevCols);
   let ptH=0,ptM=0;
-  (data.previsao||[]).forEach((r,i) => {
-    const h=parseInt(r.homens)||0, m=parseInt(r.mulheres)||0;
-    ptH+=h; ptM+=m;
+  (data.previsao||[]).forEach((r,i)=>{
+    const h=parseInt(r.homens)||0,m=parseInt(r.mulheres)||0;
+    ptH+=h;ptM+=m;
     tableRow(prevCols,[r.curso,r.duracao,r.area,r.grau,r.provincia,h,m,h+m],i%2===1);
   });
   totalRow(prevCols,['TOTAL','','','','',ptH,ptM,ptH+ptM]);
@@ -280,18 +263,16 @@ function buildPdf(data, res) {
   // ── SUMÁRIO GERAL ────────────────────────────────────────────────────────────
   const { computePrevisao } = require('./previsaoSummary');
   const summary = computePrevisao(data);
-
   newSection(`Sumário Geral — ${YEAR}`);
 
   subTitle(`I. Estudantes — Comparação ${YEAR} vs ${NEXT_YEAR}`);
-  const sumStudCols = [
+  const sumStudCols=[
     {label:'Grau',w:100},
     {label:`H ${YEAR}`,w:50,align:'center'},{label:`M ${YEAR}`,w:50,align:'center'},{label:`Tot.${YEAR}`,w:58,align:'center',total:true},
     {label:`H ${NEXT_YEAR}`,w:50,align:'center'},{label:`M ${NEXT_YEAR}`,w:50,align:'center'},{label:`Tot.${NEXT_YEAR}`,w:57,align:'center',total:true},
   ];
   tableHeader(sumStudCols);
-  summary.studentsByGrau.forEach((r,i) =>
-    tableRow(sumStudCols,[r.grau,r.h2024,r.m2024,r.total2024,r.h2025,r.m2025,r.total2025],i%2===1));
+  summary.studentsByGrau.forEach((r,i)=>tableRow(sumStudCols,[r.grau,r.h2024,r.m2024,r.total2024,r.h2025,r.m2025,r.total2025],i%2===1));
   const st=summary.studentTotals;
   totalRow(sumStudCols,['TOTAL',st.h2024,st.m2024,st.total2024,st.h2025,st.m2025,st.total2025]);
 
@@ -324,16 +305,25 @@ function buildPdf(data, res) {
   tableRow(infCols,['Laboratórios',summary.infraestrutura.totalLabs],false);
   tableRow(infCols,['Salas de aulas',summary.infraestrutura.totalSalas],true);
 
-  // ── STAMP PAGE NUMBERS on all buffered pages ─────────────────────────────────
-  const totalPages = doc.bufferedPageRange().count;
+  // ── STAMP PAGE NUMBERS ────────────────────────────────────────────────────────
+  // flushPages() releases buffered pages to the stream WITHOUT ending the doc
+  // then we switch back to stamp numbers, then call end()
+  const range = doc.bufferedPageRange();
+  const totalPages = range.count;
   for (let i = 0; i < totalPages; i++) {
-    doc.switchToPage(i);
+    doc.switchToPage(range.start + i);
     doc.save();
-    doc.fillColor('#aaa').fontSize(7.5).font('Helvetica')
-      .text(`${APP}  ·  Página ${i + 1} de ${totalPages}`, 40, doc.page.height - 22, { width: W, align: 'center' });
+    doc.fillColor('#999').fontSize(7).font('Helvetica')
+      .text(
+        `${APP}  ·  Página ${i + 1} de ${totalPages}`,
+        40, doc.page.height - 20,
+        { width: W, align: 'center' }
+      );
     doc.restore();
   }
 
+  // flushPages sends all buffered pages to the pipe exactly once
+  doc.flushPages();
   doc.end();
 }
 

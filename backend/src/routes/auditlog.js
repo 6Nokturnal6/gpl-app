@@ -22,16 +22,18 @@ router.get('/', requireAdmin, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// GET /api/audit/summary — director: summary (no detail field)
+// GET /api/audit/summary — director: summary with user names
 router.get('/summary', requireDirector, async (req, res, next) => {
   try {
     const univId = req.user.university_id;
     const r = await db.query(
-      `SELECT a.user_email, a.user_role, a.action, a.section,
+      `SELECT a.user_email, u.nome as user_nome, a.user_role, a.action, a.section,
               a.entity_id, a.created_at
        FROM audit_log a
-       JOIN users u ON u.id=a.user_id
-       WHERE u.university_id=$1
+       LEFT JOIN users u ON u.id=a.user_id
+       WHERE (u.university_id=$1 OR a.user_id IN (
+         SELECT id FROM users WHERE university_id=$1
+       ))
          AND a.action IN ('login','save_section','lock_section','unlock_section','request_unlock','submit')
        ORDER BY a.created_at DESC LIMIT 200`,
       [univId]);

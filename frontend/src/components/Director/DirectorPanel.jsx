@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import DirectorDashboard from './DirectorDashboard';
 import { campusApi, universityApi, exportApi, lockApi, auditApi, userMgmtApi } from '../../api';
 import { useAuth } from '../../hooks/useAuth';
 import { APP_NAME, CURRENT_YEAR } from '../../utils/appConfig';
@@ -179,6 +180,7 @@ export default function DirectorPanel() {
 
       {/* Tabs */}
       <div style={{ background:'var(--color-background-primary)',borderBottom:'0.5px solid var(--color-border-tertiary)',padding:'0 24px',display:'flex' }}>
+        {tabBtn('dashboard','Dashboard')}
         {tabBtn('campuses','Campi / Departamentos')}
         {tabBtn('summary','Sumário Consolidado')}
         {tabBtn('chefes','Chefes Dept.')}
@@ -188,6 +190,9 @@ export default function DirectorPanel() {
 
       <div style={{ padding:24 }}>
         {loading ? <div style={{ color:'var(--color-text-secondary)' }}>A carregar...</div> : (<>
+
+          {/* ── DASHBOARD TAB ── */}
+          {tab==='dashboard' && <DirectorDashboard summary={summary} />}
 
           {/* ── CAMPUSES TAB ── */}
           {tab==='campuses' && (<>

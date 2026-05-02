@@ -109,7 +109,7 @@ router.get('/:id/summary', async (req, res, next) => {
       );
     }
 
-    const [campuses, students, staff, researchers, finances, labs, salas, idies] = await Promise.all([
+    const [campuses, students, staff, researchers, finances, labs, salas, previsao, idies] = await Promise.all([
       db.query(`
         SELECT c.id, c.nome, c.provincia, s.status, s.id as submission_id,
           (SELECT COUNT(*) FROM section_locks sl WHERE sl.submission_id=s.id) as locked_sections,
@@ -174,6 +174,7 @@ router.get('/:id/summary', async (req, res, next) => {
       researchers: researchers.rows[0],
       finances: finances.rows[0],
       infrastructure: { labs: labs.rows[0], salas: salas.rows[0] },
+      previsao: previsao.rows,
       idies: idies.rows[0] || null,
     });
   } catch (err) { next(err); }

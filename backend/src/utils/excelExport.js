@@ -113,7 +113,7 @@ async function buildExcel(data) {
   // ── Sheet 4: Investigadores ────────────────────────────────────────────────
   const wsInv = wb.addWorksheet('Investigadores');
   wsInv.columns = [{width:18},{width:9},{width:9},{width:9},{width:9},{width:9},{width:9}];
-  wsInv.addRow(['C - Dados sobre Investigação 2024']).getCell(1).style = titleStyle();
+  wsInv.addRow(['C - Dados sobre Investigação YEAR']).getCell(1).style = titleStyle();
   wsInv.mergeCells('A1:G1');
   ['tempo_inteiro','tempo_parcial'].forEach((regime, ri) => {
     wsInv.addRow([]);
@@ -231,7 +231,7 @@ async function buildExcel(data) {
 
   // Students 2024 vs 2025
   addSumTitle(`I. Estudantes — Comparação ${YEAR} vs ${NEXT_YEAR}`);
-  addSumHdr(['Grau','H 2024','M 2024','Total 2024','H 2025','M 2025','Total 2025']);
+  addSumHdr(['Grau','H ${YEAR}','M ${YEAR}','Total ${YEAR}','H ${NEXT_YEAR}','M ${NEXT_YEAR}','Total ${NEXT_YEAR}']);
   summary.studentsByGrau.forEach((r,i)=>addSumRow([r.grau,r.h2024,r.m2024,r.total2024,r.h2025,r.m2025,r.total2025],i%2===1));
   const st=summary.studentTotals;
   addSumRow(['TOTAL',st.h2024,st.m2024,st.total2024,st.h2025,st.m2025,st.total2025],false,true);

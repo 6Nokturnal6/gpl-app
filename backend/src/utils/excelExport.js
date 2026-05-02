@@ -231,7 +231,7 @@ async function buildExcel(data) {
 
   // Students 2024 vs 2025
   addSumTitle(`I. Estudantes — Comparação ${YEAR} vs ${NEXT_YEAR}`);
-  addSumHdr(['Grau','H ${YEAR}','M ${YEAR}','Total ${YEAR}','H ${NEXT_YEAR}','M ${NEXT_YEAR}','Total ${NEXT_YEAR}']);
+  addSumHdr([`Grau`,`H ${YEAR}`,`M ${YEAR}`,`Total ${YEAR}`,`H ${NEXT_YEAR}`,`M ${NEXT_YEAR}`,`Total ${NEXT_YEAR}`]);
   summary.studentsByGrau.forEach((r,i)=>addSumRow([r.grau,r.h2024,r.m2024,r.total2024,r.h2025,r.m2025,r.total2025],i%2===1));
   const st=summary.studentTotals;
   addSumRow(['TOTAL',st.h2024,st.m2024,st.total2024,st.h2025,st.m2025,st.total2025],false,true);

@@ -164,7 +164,13 @@ router.get('/:id/summary', async (req, res, next) => {
         [subIds]
       ) : Promise.resolve({ rows: [{ total_salas:0 }] }),
 
-      db.query('SELECT * FROM university_id_ies WHERE university_id=$1', [uid]),
+            // Aggregated previsao rows
+      subIds.length ? db.query(
+        'SELECT grau, homens, mulheres FROM previsao WHERE submission_id = ANY(\$1::uuid[]) ORDER BY grau',
+        [subIds]
+      ) : Promise.resolve({ rows: [] }),
+
+      db.query('SELECT * FROM university_id_ies WHERE university_id=\$1', [uid]),
     ]);
 
     res.json({

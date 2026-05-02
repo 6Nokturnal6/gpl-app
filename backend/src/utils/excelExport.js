@@ -113,7 +113,7 @@ async function buildExcel(data) {
   // ── Sheet 4: Investigadores ────────────────────────────────────────────────
   const wsInv = wb.addWorksheet('Investigadores');
   wsInv.columns = [{width:18},{width:9},{width:9},{width:9},{width:9},{width:9},{width:9}];
-  wsInv.addRow(['C - Dados sobre Investigação YEAR']).getCell(1).style = titleStyle();
+  wsInv.addRow([`C - Dados sobre Investigação ${YEAR}`]).getCell(1).style = titleStyle();
   wsInv.mergeCells('A1:G1');
   ['tempo_inteiro','tempo_parcial'].forEach((regime, ri) => {
     wsInv.addRow([]);
@@ -229,7 +229,7 @@ async function buildExcel(data) {
     });
   }
 
-  // Students 2024 vs 2025
+  // Students ${YEAR} vs ${NEXT_YEAR}
   addSumTitle(`I. Estudantes — Comparação ${YEAR} vs ${NEXT_YEAR}`);
   addSumHdr([`Grau`,`H ${YEAR}`,`M ${YEAR}`,`Total ${YEAR}`,`H ${NEXT_YEAR}`,`M ${NEXT_YEAR}`,`Total ${NEXT_YEAR}`]);
   summary.studentsByGrau.forEach((r,i)=>addSumRow([r.grau,r.h2024,r.m2024,r.total2024,r.h2025,r.m2025,r.total2025],i%2===1));
@@ -260,7 +260,7 @@ async function buildExcel(data) {
     .forEach(([l,v],i)=>{ const r=wsSum.addRow([l,v,'','','','','']); r.eachCell((c,j)=>{c.style=cellStyle(i%2===1?GRAY:null);if(j===2){c.numFmt='#,##0';}}); });
   addSumRow(['Total Financiamento',summary.financas.totalFunding,'','','','',''],false,true);
   wsSum.addRow([]);
-  [['Ensino',summary.financas.func_ensino],['Investigação',summary.financas.func_investig],['Administração',summary.financas.func_admin],['Sal. Docentes',summary.financas.sal_docentes],['Sal. Técnicos',summary.financas.sal_tecnicos]]
+  [['Ensino',summary.financas.func_ensino],['Investigação',summary.financas.func_investig],['Administração',summary.financas.func_admin],['Salário Docentes',summary.financas.sal_docentes],['Salário Técnicos',summary.financas.sal_tecnicos]]
     .forEach(([l,v],i)=>{ const r=wsSum.addRow([l,v,'','','','','']); r.eachCell((c,j)=>{c.style=cellStyle(i%2===1?GRAY:null);if(j===2){c.numFmt='#,##0';}}); });
   addSumRow(['Total Despesas',summary.financas.totalDesp,'','','','',''],false,true);
   wsSum.addRow([]);

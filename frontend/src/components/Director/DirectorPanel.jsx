@@ -133,11 +133,11 @@ export default function DirectorPanel() {
     const sigla = summary?.campuses?.[0]?.nome || 'Univ';
     try {
       if (subId) {
-        if (type === 'pdf') await exportApi.downloadSubmissionPdf(subId, `Campus_${CURRENT_YEAR}.pdf`);
-        else await exportApi.downloadSubmissionXlsx(subId, `Campus_${CURRENT_YEAR}.xlsx`);
+        if (type === 'pdf') await exportApi.downloadSubmissionPdf(subId, `Campus_${CURRENT_YEAR}_${sigla}.pdf`);
+        else await exportApi.downloadSubmissionXlsx(subId, `Campus_${CURRENT_YEAR}_${sigla}.xlsx`);
       } else {
-        if (type === 'pdf') await exportApi.downloadUniversityPdf(`Consolidado_${CURRENT_YEAR}_${sigla}.pdf`);
-        else await exportApi.downloadUniversityXlsx(`Consolidado_${CURRENT_YEAR}_${sigla}.xlsx`);
+        if (type === 'pdf') await exportApi.downloadUniversityPdf(`Consolidado_${CURRENT_YEAR}_Geral.pdf`);
+        else await exportApi.downloadUniversityXlsx(`Consolidado_${CURRENT_YEAR}_Geral.xlsx`);
       }
     } finally { setDownloading(null); }
   };

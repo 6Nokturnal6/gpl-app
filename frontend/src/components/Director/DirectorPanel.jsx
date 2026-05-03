@@ -130,7 +130,7 @@ export default function DirectorPanel() {
   const handleDownload = async (type, subId) => {
     const key = subId ? `${type}-${subId}` : `${type}-univ`;
     setDownloading(key);
-    const sigla = summary?.campuses?.[0]?.nome || 'Univ';
+    const sigla = summary?.campuses?.[1]?.nome || 'Univ';
     try {
       if (subId) {
         if (type === 'pdf') await exportApi.downloadSubmissionPdf(subId, `Campus_${CURRENT_YEAR}_${sigla}.pdf`);

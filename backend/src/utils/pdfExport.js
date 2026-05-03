@@ -167,15 +167,12 @@ function buildPdfBuffer(data) {
 
     // Infra
     newSection('D. Infraestruturas — ' + YEAR);
-    doc.setLeftMargin(0);
     subTitle('Quadro 1.1 – Laboratórios em funcionamento');
     const labCols=[{label:'Nome do laboratório',w:148},{label:'Área',w:86},{label:'Província',w:68},{label:'Distrito',w:68},{label:'N.º',w:45,align:'center',total:true}];
     tableHeader(labCols);
     (data.infra?.labs||[]).forEach((r,i)=>tableRow(labCols,[r.nome,r.area,r.provincia,r.distrito,r.num_labs||0],i%2===1));
     totalRow(labCols,['Total','','','',(data.infra?.labs||[]).reduce((a,r)=>a+(parseInt(r.num_labs)||0),0)]);
-    doc.moveDown(0.6);
-    doc.setLeftMargin(0);
-    subTitle('Quadro 1.2 – Salas de aulas');
+    doc.moveDown(0.6);subTitle('Quadro 1.2 – Salas de aulas');
     const salaCols=[{label:'Unidade Orgânica',w:175},{label:'Província',w:78},{label:'Grau',w:100},{label:'N.º salas',w:62,align:'center',total:true}];
     tableHeader(salaCols);
     (data.infra?.salas||[]).forEach((r,i)=>tableRow(salaCols,[r.unidade,r.provincia,r.grau,r.num_salas||0],i%2===1));
@@ -194,27 +191,23 @@ function buildPdfBuffer(data) {
     const {computePrevisao}=require('./previsaoSummary');
     const summary=computePrevisao(data);
     newSection('Sumário Geral — ' + YEAR);
-    doc.setLeftMargin(0);
     subTitle('I. Estudantes — Comparação ' + YEAR + ' vs ' + NEXT_YEAR);
     const sumStudCols=[{label:'Grau',w:100},{label:'H '+YEAR,w:50,align:'center'},{label:'M '+YEAR,w:50,align:'center'},{label:'Tot.'+YEAR,w:58,align:'center',total:true},{label:'H '+NEXT_YEAR,w:50,align:'center'},{label:'M '+NEXT_YEAR,w:50,align:'center'},{label:'Tot.'+NEXT_YEAR,w:57,align:'center',total:true}];
     tableHeader(sumStudCols);
     summary.studentsByGrau.forEach((r,i)=>tableRow(sumStudCols,[r.grau,r.h2024,r.m2024,r.total2024,r.h2025,r.m2025,r.total2025],i%2===1));
     const st=summary.studentTotals;
     totalRow(sumStudCols,['TOTAL',st.h2024,st.m2024,st.total2024,st.h2025,st.m2025,st.total2025]);
-    doc.setLeftMargin(0);
     subTitle('II. Corpo Docente');
     const sumDocCols=[{label:'Regime',w:120},{label:'Homens',w:90,align:'center'},{label:'Mulheres',w:90,align:'center'},{label:'Total',w:115,align:'center',total:true}];
     tableHeader(sumDocCols);
     tableRow(sumDocCols,['Tempo Inteiro',summary.docentes.ti.h,summary.docentes.ti.m,summary.docentes.ti.h+summary.docentes.ti.m],false);
     tableRow(sumDocCols,['Tempo Parcial',summary.docentes.tp.h,summary.docentes.tp.m,summary.docentes.tp.h+summary.docentes.tp.m],true);
     totalRow(sumDocCols,['TOTAL',summary.docentes.total.h,summary.docentes.total.m,summary.docentes.total.h+summary.docentes.total.m]);
-    doc.setLeftMargin(0);
     subTitle('III. Investigadores');
     tableHeader(sumDocCols);
     tableRow(sumDocCols,['Tempo Inteiro',summary.investigadores.ti.h,summary.investigadores.ti.m,summary.investigadores.ti.h+summary.investigadores.ti.m],false);
     tableRow(sumDocCols,['Tempo Parcial',summary.investigadores.tp.h,summary.investigadores.tp.m,summary.investigadores.tp.h+summary.investigadores.tp.m],true);
     totalRow(sumDocCols,['TOTAL',summary.investigadores.total.h,summary.investigadores.total.m,summary.investigadores.total.h+summary.investigadores.total.m]);
-    doc.setLeftMargin(0);
     subTitle('IV. Recursos Financeiros (MT x 10^3)');
     const finSumCols=[{label:'Fonte / Categoria',w:320},{label:'Valor',w:135,align:'right',total:true}];
     tableHeader(finSumCols);
@@ -222,7 +215,6 @@ function buildPdfBuffer(data) {
     totalRow(finSumCols,['Total Financiamento',(parseFloat(summary.financas.totalFunding)||0).toLocaleString('pt-MZ')]);
     [['Ensino',summary.financas.func_ensino],['Investigação',summary.financas.func_investig],['Administração',summary.financas.func_admin],['Salário Docentes',summary.financas.sal_docentes],['Salário Técnicos',summary.financas.sal_tecnicos]].forEach(([l,v],i)=>tableRow(finSumCols,[l,(parseFloat(v)||0).toLocaleString('pt-MZ')],i%2===1));
     totalRow(finSumCols,['Total Despesas',(parseFloat(summary.financas.totalDesp)||0).toLocaleString('pt-MZ')]);
-    doc.setLeftMargin(0);
     subTitle('V. Infraestrutura');
     const infCols=[{label:'Tipo',w:320},{label:'Total',w:135,align:'center',total:true}];
     tableHeader(infCols);

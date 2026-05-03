@@ -22,12 +22,39 @@ function buildPdfBuffer(data) {
     doc.on('error', reject);
     const W = doc.page.width - 80;
 
-    // ----- Helper: reset X to left margin (40) -----
+    // Track whether anything has been drawn on the current page
+    let currentPageHasContent = false;
+
+    // Helper: mark page as having content
+    function markContent() {
+      currentPageHasContent = true;
+    }
+
+    // Force a new page only if current page has content (avoids blank pages)
+    function forceNewPage() {
+      if (currentPageHasContent) {
+        doc.addPage();
+        currentPageHasContent = false;
+        drawHeader();
+      }
+    }
+
+    // Ensure enough vertical space; if not, add a new page (only if current page has content)
+    function ensureSpace(lines = 3) {
+      const needed = lines * 14; // rough line height
+      if (doc.y > doc.page.height - 80 - needed) {
+        if (currentPageHasContent) {
+          doc.addPage();
+          currentPageHasContent = false;
+          drawHeader();
+        }
+      }
+    }
+
     function resetX() {
       doc.x = 40;
     }
 
-    // ----- Header (on every page except cover? Actually cover also uses it) -----
     function drawHeader() {
       doc.save();
       doc.rect(40, 30, W, 46).fill(BLUE);
@@ -38,54 +65,52 @@ function buildPdfBuffer(data) {
       doc.restore();
       doc.y = 90;
       resetX();
+      // Header itself counts as content
+      markContent();
     }
 
-    // ----- Start a new major section on a fresh page -----
-    function newSection(title) {
-      doc.addPage();
-      drawHeader();
+    // Start a major section – only adds page if not already at top of fresh page
+    function startNewSection(title) {
+      // If current page has no content AND we are at y <= 95 (just after header)
+      // then reuse the current page instead of adding a new one.
+      if (!currentPageHasContent && doc.y <= 95) {
+        // Already at a fresh page – just draw title
+      } else {
+        forceNewPage();
+      }
       doc.fillColor(BLUE).fontSize(11).font('Helvetica-Bold').text(title, 40, doc.y);
       doc.moveDown(0.25);
       doc.rect(40, doc.y, W, 1).fill(BLUE);
       doc.moveDown(0.6);
       doc.fillColor(DARK).font('Helvetica').fontSize(10);
       resetX();
-      // Reserve space for at least the first sub‑title / table header
-      checkPage(40);
+      markContent();
+      ensureSpace(4);
     }
 
-    // ----- Subtitle fix: always start at left margin -----
     function subTitle(text) {
       doc.moveDown(0.3);
-      resetX();                     // *** prevents indentation ***
+      resetX();
       doc.fillColor(MID).fontSize(9).font('Helvetica-Bold').text(text);
       doc.moveDown(0.25);
       doc.fillColor(DARK).font('Helvetica').fontSize(10);
       resetX();
-    }
-
-    // ----- Page break helper (increased bottom margin to 80) -----
-    function checkPage(px) {
-      // Increased from 60 to 80 to reduce premature page breaks
-      if (doc.y > doc.page.height - 80 - (px || 30)) {
-        doc.addPage();
-        drawHeader();
-        resetX();
-      }
+      markContent();
+      ensureSpace(2);
     }
 
     function infoRow(label, value) {
-      checkPage(16);
+      ensureSpace(2);
       const y = doc.y;
       doc.fillColor(MID).fontSize(9).font('Helvetica').text(label + ':', 40, y, { width: 140 });
       doc.fillColor(DARK).fontSize(9).font('Helvetica-Bold').text(String(value || '—'), 185, y, { width: W - 145 });
-      doc.font('Helvetica');
       doc.y = y + 16;
       resetX();
+      markContent();
     }
 
     function tableHeader(cols) {
-      checkPage(22);
+      ensureSpace(3);
       const y = doc.y;
       doc.rect(40, y, W, 16).fill(BLUE);
       let x = 40;
@@ -97,10 +122,11 @@ function buildPdfBuffer(data) {
       doc.y = y + 16;
       doc.fillColor(DARK).font('Helvetica');
       resetX();
+      markContent();
     }
 
     function tableRow(cols, values, shade) {
-      checkPage(15);
+      ensureSpace(2);
       const y = doc.y;
       if (shade) doc.rect(40, y, W, 14).fill(GRAY);
       doc.rect(40, y, W, 14).stroke(BORDER);
@@ -113,10 +139,11 @@ function buildPdfBuffer(data) {
       });
       doc.y = y + 14;
       resetX();
+      markContent();
     }
 
     function totalRow(cols, values) {
-      checkPage(17);
+      ensureSpace(2);
       const y = doc.y;
       doc.rect(40, y, W, 16).fill(LIGHT_GREEN);
       let x = 40;
@@ -127,10 +154,11 @@ function buildPdfBuffer(data) {
       });
       doc.y = y + 17;
       resetX();
+      markContent();
     }
 
     function finRow(label, value, isTotal) {
-      checkPage(20);
+      ensureSpace(2);
       const y = doc.y;
       const h = isTotal ? 18 : 15;
       const formatted = (parseFloat(value) || 0).toLocaleString('pt-MZ') + ' MT\u00d710\u00b3';
@@ -141,12 +169,12 @@ function buildPdfBuffer(data) {
       doc.fillColor(isTotal ? BLUE : DARK).font('Helvetica-Bold').fontSize(9)
         .text(formatted, 40 + W - 115, y + (isTotal ? 5 : 3), { width: 110, align: 'right' });
       doc.y = y + h + 1;
-      doc.font('Helvetica');
       resetX();
+      markContent();
     }
 
     // ---------- COVER PAGE ----------
-    drawHeader();
+    drawHeader();  // draws header on page 1
     const d = data.idies || {};
     const campusNome = data.campusNome || null;
     doc.fillColor(BLUE).fontSize(20).font('Helvetica-Bold').text(d.nome || 'Instituição de Ensino Superior', 40, doc.y, { width: W });
@@ -160,9 +188,11 @@ function buildPdfBuffer(data) {
     [['Nome', d.responsavel], ['Função', d.funcao], ['Email', d.email_resp]].forEach(([l, v]) => infoRow(l, v));
     doc.moveDown(1.5);
     doc.fillColor('#aaa').fontSize(8).font('Helvetica').text('Gerado em ' + DATE_STR + ' via ' + APP, { align: 'center', width: W });
+    markContent();
 
-    // ---------- ESTUDANTES ----------
-    newSection('1. Estatística sobre Corpo Discente — ' + YEAR);
+    // ---------- SECTIONS ----------
+    // Estudantes
+    startNewSection('1. Estatística sobre Corpo Discente — ' + YEAR);
     subTitle('Estudantes por curso, género, regime e grau');
     const estCols = [{ label: 'Nome do curso', w: 118 }, { label: 'Dur.', w: 26, align: 'center' }, { label: 'Área', w: 70 }, { label: 'Regime', w: 55 }, { label: 'Grau', w: 72 }, { label: 'H', w: 26, align: 'center' }, { label: 'M', w: 26, align: 'center' }, { label: 'Total', w: 42, align: 'center', total: true }];
     tableHeader(estCols);
@@ -170,8 +200,8 @@ function buildPdfBuffer(data) {
     (data.estudantes || []).forEach((r, i) => { const h = parseInt(r.homens) || 0, m = parseInt(r.mulheres) || 0; tH += h; tM += m; tableRow(estCols, [r.curso, r.duracao, r.area, r.regime, r.grau, h, m, h + m], i % 2 === 1); });
     totalRow(estCols, ['TOTAL', '', '', '', '', tH, tM, tH + tM]);
 
-    // ---------- DOCENTES ----------
-    newSection('A. Corpo Docente — ' + YEAR);
+    // Docentes
+    startNewSection('A. Corpo Docente — ' + YEAR);
     subTitle('Docentes por regime, grau académico e género');
     const docCols = [{ label: 'Regime', w: 65 }, { label: 'Província', w: 58 }, { label: 'Nac.', w: 60 }, { label: 'Lic.H', w: 30, align: 'center' }, { label: 'Lic.M', w: 30, align: 'center' }, { label: 'Mest.H', w: 32, align: 'center' }, { label: 'Mest.M', w: 32, align: 'center' }, { label: 'Dout.H', w: 32, align: 'center' }, { label: 'Dout.M', w: 32, align: 'center' }, { label: 'Total', w: 44, align: 'center', total: true }];
     tableHeader(docCols);
@@ -180,8 +210,8 @@ function buildPdfBuffer(data) {
       tableRow(docCols, [r.regime === 'tempo_inteiro' ? 'T.Inteiro' : 'T.Parcial', r.provincia, r.nacionalidade, r.lic_h || 0, r.lic_m || 0, r.mest_h || 0, r.mest_m || 0, r.dout_h || 0, r.dout_m || 0, tot], i % 2 === 1);
     });
 
-    // ---------- INVESTIGADORES ----------
-    newSection('C. Investigadores — ' + YEAR);
+    // Investigadores
+    startNewSection('C. Investigadores — ' + YEAR);
     subTitle('Investigadores por regime, nacionalidade e género');
     const invCols = [{ label: 'Regime', w: 80 }, { label: 'Nacionalidade', w: 86 }, { label: 'Lic.H', w: 36, align: 'center' }, { label: 'Lic.M', w: 36, align: 'center' }, { label: 'Mest.H', w: 38, align: 'center' }, { label: 'Mest.M', w: 38, align: 'center' }, { label: 'Dout.H', w: 38, align: 'center' }, { label: 'Dout.M', w: 38, align: 'center' }, { label: 'Total', w: 45, align: 'center', total: true }];
     tableHeader(invCols);
@@ -190,8 +220,8 @@ function buildPdfBuffer(data) {
       tableRow(invCols, [r.regime === 'tempo_inteiro' ? 'T.Inteiro' : 'T.Parcial', r.nacionalidade, r.lic_h || 0, r.lic_m || 0, r.mest_h || 0, r.mest_m || 0, r.dout_h || 0, r.dout_m || 0, tot], i % 2 === 1);
     });
 
-    // ---------- FINANÇAS ----------
-    newSection('Recursos Financeiros — ' + YEAR);
+    // Finanças
+    startNewSection('Recursos Financeiros — ' + YEAR);
     const fin = data.financas || {};
     subTitle('Quadro 2 – Financiamento por fonte');
     finRow('OGE (Orçamento Geral do Estado)', fin.oge);
@@ -208,8 +238,8 @@ function buildPdfBuffer(data) {
     finRow('Salários – Técnicos Administrativos', fin.sal_tecnicos);
     finRow('Total despesas', (parseFloat(fin.func_ensino) || 0) + (parseFloat(fin.func_investig) || 0) + (parseFloat(fin.func_admin) || 0) + (parseFloat(fin.sal_docentes) || 0) + (parseFloat(fin.sal_tecnicos) || 0), true);
 
-    // ---------- INFRAESTRUTURAS ----------
-    newSection('D. Infraestruturas — ' + YEAR);
+    // Infraestruturas
+    startNewSection('D. Infraestruturas — ' + YEAR);
     subTitle('Quadro 1.1 – Laboratórios em funcionamento');
     const labCols = [{ label: 'Nome do laboratório', w: 148 }, { label: 'Área', w: 86 }, { label: 'Província', w: 68 }, { label: 'Distrito', w: 68 }, { label: 'N.º', w: 45, align: 'center', total: true }];
     tableHeader(labCols);
@@ -222,8 +252,8 @@ function buildPdfBuffer(data) {
     (data.infra?.salas || []).forEach((r, i) => tableRow(salaCols, [r.unidade, r.provincia, r.grau, r.num_salas || 0], i % 2 === 1));
     totalRow(salaCols, ['Total', '', '', (data.infra?.salas || []).reduce((a, r) => a + (parseInt(r.num_salas) || 0), 0)]);
 
-    // ---------- PREVISÃO ----------
-    newSection('Previsão / Preliminar para ' + NEXT_YEAR);
+    // Previsão
+    startNewSection('Previsão / Preliminar para ' + NEXT_YEAR);
     subTitle('Estudantes previstos por curso, grau e género');
     const prevCols = [{ label: 'Nome do curso', w: 128 }, { label: 'Dur.', w: 36, align: 'center' }, { label: 'Área', w: 78 }, { label: 'Grau', w: 76 }, { label: 'Província', w: 62 }, { label: 'H', w: 28, align: 'center' }, { label: 'M', w: 28, align: 'center' }, { label: 'Total', w: 39, align: 'center', total: true }];
     tableHeader(prevCols);
@@ -231,10 +261,10 @@ function buildPdfBuffer(data) {
     (data.previsao || []).forEach((r, i) => { const h = parseInt(r.homens) || 0, m = parseInt(r.mulheres) || 0; ptH += h; ptM += m; tableRow(prevCols, [r.curso, r.duracao, r.area, r.grau, r.provincia, h, m, h + m], i % 2 === 1); });
     totalRow(prevCols, ['TOTAL', '', '', '', '', ptH, ptM, ptH + ptM]);
 
-    // ---------- SUMÁRIO GERAL ----------
+    // Sumário Geral
     const { computePrevisao } = require('./previsaoSummary');
     const summary = computePrevisao(data);
-    newSection('Sumário Geral — ' + YEAR);
+    startNewSection('Sumário Geral — ' + YEAR);
     subTitle('I. Estudantes — Comparação ' + YEAR + ' vs ' + NEXT_YEAR);
     const sumStudCols = [{ label: 'Grau', w: 100 }, { label: 'H ' + YEAR, w: 50, align: 'center' }, { label: 'M ' + YEAR, w: 50, align: 'center' }, { label: 'Tot.' + YEAR, w: 58, align: 'center', total: true }, { label: 'H ' + NEXT_YEAR, w: 50, align: 'center' }, { label: 'M ' + NEXT_YEAR, w: 50, align: 'center' }, { label: 'Tot.' + NEXT_YEAR, w: 57, align: 'center', total: true }];
     tableHeader(sumStudCols);
@@ -269,11 +299,14 @@ function buildPdfBuffer(data) {
     tableRow(infCols, ['Laboratórios', summary.infraestrutura.totalLabs], false);
     tableRow(infCols, ['Salas de aulas', summary.infraestrutura.totalSalas], true);
 
-    // ---------- PAGE NUMBERS (skip cover? currently numbers all pages, including cover) ----------
-    // If you want NO number on the cover, change the loop to start from i=1
+    // ---------- PAGE NUMBERS (only on pages that have content) ----------
     const range = doc.bufferedPageRange();
+    // Start from page 0 (cover), but we might skip numbering cover if desired.
+    // If you want NO number on the cover, change loop start to i=1.
     for (let i = 0; i < range.count; i++) {
       doc.switchToPage(range.start + i);
+      // Only add page number if this page has any content (markContent was called at least once)
+      // Note: even the header triggers markContent, so all pages with header get a number.
       doc.save();
       doc.fillColor('#999').fontSize(7).font('Helvetica')
         .text(APP + '  ·  Página ' + (i + 1) + ' de ' + range.count, 40, doc.page.height - 20, { width: W, align: 'center' });

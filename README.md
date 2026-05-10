@@ -56,7 +56,7 @@ Terminal 1 — Database:
 docker run -d --name gpl_pg \
   -e POSTGRES_DB=gpl_db \
   -e POSTGRES_USER=gpl_user \
-  -e POSTGRES_PASSWORD=Ciul***2026** \
+  -e POSTGRES_PASSWORD=xxxxxx \
   -p 5432:5432 postgres:16-alpine
 ```
 

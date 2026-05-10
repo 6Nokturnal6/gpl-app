@@ -4,6 +4,3 @@ node_modules/
 dist/
 .DS_Store
 nginx/ssl/
-gpl-app/
-gpl-app-*/
-*.tar.gz

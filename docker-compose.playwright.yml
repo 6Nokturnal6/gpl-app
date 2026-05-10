@@ -1,0 +1,23 @@
+version: '3.9'
+
+services:
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.39.0-focal
+    container_name: gpl_playwright
+    depends_on:
+      nginx:
+        condition: service_started
+    volumes:
+      - ./e2e:/tests
+    working_dir: /tests
+    environment:
+      PLAYWRIGHT_BASE_URL: http://nginx
+      CI: "true"
+    networks:
+      - gpl_network
+    command: sh -c "npm ci --prefer-offline && npx playwright install --with-deps && npx playwright test --reporter=list --timeout=30000"
+    restart: "no"
+
+networks:
+  gpl_network:
+    external: true

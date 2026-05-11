@@ -314,6 +314,11 @@ function buildPdfBuffer(data) {
       doc.restore();
     }
 
+    // Ensure buffered pages are flushed into the output exactly once
+    if (typeof doc.flushPages === 'function') {
+      try { doc.flushPages(); } catch (e) { /* ignore if unavailable */ }
+    }
+
     doc.end();
   });
 }

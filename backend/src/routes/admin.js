@@ -147,4 +147,39 @@ router.get('/users', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// New endpoints: issued-jtis and revoked-jtis
+// GET /api/admin/issued-jtis?q=...&limit=100
+router.get('/issued-jtis', async (req, res) => {
+  const q = (req.query.q || '').trim();
+  const limit = Math.min(parseInt(req.query.limit || '200', 10), 1000);
+  try {
+    if (q) {
+      const r = await db.query("SELECT jti,user_id,issued_at,expires_at FROM issued_jtis WHERE jti ILIKE $1 OR user_id::text ILIKE $1 ORDER BY issued_at DESC LIMIT $2", [`%${q}%`, limit]);
+      return res.json(r.rows);
+    }
+    const r = await db.query('SELECT jti,user_id,issued_at,expires_at FROM issued_jtis ORDER BY issued_at DESC LIMIT $1', [limit]);
+    res.json(r.rows);
+  } catch (err) {
+    console.error('Failed to list issued_jtis:', err);
+    res.status(500).json({ error: 'Failed to list' });
+  }
+});
+
+// GET /api/admin/revoked-jtis?q=...&limit=100
+router.get('/revoked-jtis', async (req, res) => {
+  const q = (req.query.q || '').trim();
+  const limit = Math.min(parseInt(req.query.limit || '200', 10), 1000);
+  try {
+    if (q) {
+      const r = await db.query("SELECT jti,revoked_at,reason FROM revoked_jtis WHERE jti ILIKE $1 OR reason ILIKE $1 ORDER BY revoked_at DESC LIMIT $2", [`%${q}%`, limit]);
+      return res.json(r.rows);
+    }
+    const r = await db.query('SELECT jti,revoked_at,reason FROM revoked_jtis ORDER BY revoked_at DESC LIMIT $1', [limit]);
+    res.json(r.rows);
+  } catch (err) {
+    console.error('Failed to list revoked_jtis:', err);
+    res.status(500).json({ error: 'Failed to list' });
+  }
+});
+
 module.exports = router;

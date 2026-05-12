@@ -76,6 +76,8 @@ export const adminApi = {
   getStats: () => api.get('/admin/stats'),
   getUsers: () => api.get('/admin/users'),
   revokeToken: (data) => api.post('/admin/revoke-token', data),
+  listIssuedJtis: (params) => api.get('/admin/issued-jtis', { params }),
+  listRevokedJtis: (params) => api.get('/admin/revoked-jtis', { params }),
 };
 
 export const campusApi = {

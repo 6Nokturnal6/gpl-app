@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { adminApi, exportApi } from '../../api';
 import { useAuth } from '../../hooks/useAuth';
 import RevokeTokenPanel from './RevokeTokenPanel';
+import JtiManagementPanel from './JtiManagementPanel';
 
 const STATUS_STYLE = {
   draft:     { bg: '#F1EFE8', color: '#5F5E5A', label: 'Rascunho' },
@@ -270,7 +271,12 @@ export default function AdminPanel() {
           </>
         ) : tab === 'users' ? (
           <div>
-            {user?.role === 'superadmin' && <RevokeTokenPanel />}
+            {user?.role === 'superadmin' && (
+              <>
+                <RevokeTokenPanel />
+                <JtiManagementPanel />
+              </>
+            )}
             <div style={{ background: 'var(--color-background-primary)', border: '0.5px solid var(--color-border-tertiary)', borderRadius: 12, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>

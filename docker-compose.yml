@@ -38,6 +38,27 @@ services:
     networks:
       - gpl_network
 
+  # Dedicated scheduler service (runs the backend image with SCHEDULER_ACTIVE=true)
+  scheduler:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gpl_scheduler
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-gpl_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-gpl_db}
+      JWT_SECRET: ${JWT_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      SCHEDULER_ACTIVE: 'true'
+      ROLL_OVER_DRY_RUN: ${ROLL_OVER_DRY_RUN:-'false'}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - gpl_network
+
   frontend:
     build:
       context: ./frontend

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { userMgmtApi, universityApi, auditApi } from '../../api';
 import { useAuth } from '../../hooks/useAuth';
 import { APP_NAME } from '../../utils/appConfig';
+import RevokeTokenPanel from './RevokeTokenPanel';
+import JtiManagementPanel from './JtiManagementPanel';
 
 const ROLE_LABEL = { superadmin:'Super Admin', director_gpl:'Director GPL', chefe_departamento:'Chefe Dept.' };
 const ROLE_COLOR = { superadmin:'#185FA5', director_gpl:'#3B6D11', chefe_departamento:'#854F0B' };
@@ -225,6 +227,13 @@ export default function SuperAdminDashboard() {
               ))}
               <span style={{ marginLeft:'auto', fontSize:12, color:'var(--color-text-secondary)' }}>{filteredUsers.length} utilizadores</span>
             </div>
+
+            {user?.role === 'superadmin' && (
+              <div style={{ marginBottom: 12 }}>
+                <RevokeTokenPanel />
+                <JtiManagementPanel />
+              </div>
+            )}
 
             <div style={{ background:'var(--color-background-primary)', border:'0.5px solid var(--color-border-tertiary)', borderRadius:12, overflow:'hidden' }}>
               <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>

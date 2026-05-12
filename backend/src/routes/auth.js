@@ -5,6 +5,7 @@ const Joi = require('joi');
 const db = require('../models/db');
 const { authenticate } = require('../middleware/auth');
 const audit = require('../utils/audit');
+const { v4: uuidv4 } = require('uuid');
 
 const router = express.Router();
 
@@ -49,10 +50,15 @@ router.post('/register', async (req, res, next) => {
     );
 
     const user = result.rows[0];
+    const jti = uuidv4();
     const token = jwt.sign(
       { id: user.id, role: user.role, university_id: user.university_id, campus_id: user.campus_id },
-      process.env.JWT_SECRET, { expiresIn: '8h' }
+      process.env.JWT_SECRET, { jwtid: jti, expiresIn: '8h' }
     );
+    // record issued jti for auditing
+    try {
+      await db.query("INSERT INTO issued_jtis (jti, user_id, issued_at, expires_at) VALUES ($1, $2, now(), now() + INTERVAL '8 hours') ON CONFLICT (jti) DO NOTHING", [jti, user.id]);
+    } catch (e) { console.error('Failed to insert issued_jtis:', e); }
     res.status(201).json({ token, user });
   } catch (err) { next(err); }
 });
@@ -70,10 +76,15 @@ router.post('/login', async (req, res, next) => {
     if (user.is_active === false) {
       return res.status(403).json({ error: 'Conta desactivada. Contacte o Director GPL.' });
     }
+    const jti = uuidv4();
     const token = jwt.sign(
       { id: user.id, role: user.role, university_id: user.university_id, campus_id: user.campus_id },
-      process.env.JWT_SECRET, { expiresIn: '8h' }
+      process.env.JWT_SECRET, { jwtid: jti, expiresIn: '8h' }
     );
+    // record issued jti for auditing
+    try {
+      await db.query("INSERT INTO issued_jtis (jti, user_id, issued_at, expires_at) VALUES ($1, $2, now(), now() + INTERVAL '8 hours') ON CONFLICT (jti) DO NOTHING", [jti, user.id]);
+    } catch (e) { console.error('Failed to insert issued_jtis:', e); }
     // Log login
     audit.log({ userId: user.id, userEmail: user.email, userRole: user.role,
       action: 'login', ip: audit.getIp(req) });

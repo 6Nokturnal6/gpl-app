@@ -75,6 +75,7 @@ export const adminApi = {
   setStatus: (id, status, note) => api.patch(`/admin/submissions/${id}/status`, { status, note }),
   getStats: () => api.get('/admin/stats'),
   getUsers: () => api.get('/admin/users'),
+  revokeToken: (data) => api.post('/admin/revoke-token', data),
 };
 
 export const campusApi = {

@@ -227,6 +227,49 @@ router.post('/submit', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// PUT /api/submissions/:submissionId/idies — director_gpl only: set ID IES for a specific submission (useful when university info missing)
+router.put('/:submissionId/idies', requireDirector, async (req, res, next) => {
+  try {
+    const submissionId = req.params.submissionId;
+    const d = req.body || {};
+
+    // Find submission to resolve university or campus
+    const subRes = await db.query('SELECT university_id, campus_id FROM submissions WHERE id=$1', [submissionId]);
+    if (!subRes.rows.length) return res.status(404).json({ error: 'Submissão não encontrada' });
+    let univId = d.university_id || subRes.rows[0].university_id;
+
+    // If still missing, resolve from campus
+    if (!univId && subRes.rows[0].campus_id) {
+      const r = await db.query('SELECT university_id FROM campuses WHERE id=$1', [subRes.rows[0].campus_id]);
+      univId = r.rows[0]?.university_id || null;
+    }
+
+    if (!univId) return res.status(400).json({ error: 'É necessário o university_id (ou associe a submissão a uma universidade)' });
+
+    // Upsert university-level IES data
+    await db.query(`
+      INSERT INTO university_id_ies
+        (university_id,nome,sigla,nuit,ano_inicio,provincia,distrito,website,contacto,email,responsavel,funcao,email_resp,updated_at)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,NOW())
+      ON CONFLICT (university_id) DO UPDATE SET
+        nome=$2,sigla=$3,nuit=$4,ano_inicio=$5,provincia=$6,distrito=$7,
+        website=$8,contacto=$9,email=$10,responsavel=$11,funcao=$12,email_resp=$13,updated_at=NOW()`,
+      [univId, d.nome, d.sigla, d.nuit, d.ano_inicio, d.provincia, d.distrito,
+       d.website, d.contacto, d.email, d.responsavel, d.funcao, d.email_resp]
+    );
+
+    // Optionally associate this submission with the university if it wasn't set
+    if (!subRes.rows[0].university_id) {
+      await db.query('UPDATE submissions SET university_id=$1 WHERE id=$2', [univId, submissionId]);
+    }
+
+    audit.log({ userId:req.user.id, userEmail:req.user.email, userRole:req.user.role,
+      action:'save_university_idies_for_submission', entityType:'submission', entityId:submissionId, section:'idies', ip:audit.getIp(req) });
+
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
 
 // Helper used above (inline)

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import DirectorDashboard from './DirectorDashboard';
-import { campusApi, universityApi, exportApi, lockApi, auditApi, userMgmtApi } from '../../api';
+import { campusApi, universityApi, exportApi, lockApi, auditApi, userMgmtApi, submissionApi } from '../../api';
 import { useAuth } from '../../hooks/useAuth';
 import { APP_NAME, CURRENT_YEAR } from '../../utils/appConfig';
 
@@ -80,6 +80,8 @@ export default function DirectorPanel() {
   const [unlockRequests, setUnlockRequests] = useState([]);
   const [auditLog, setAuditLog] = useState([]);
   const [modal, setModal] = useState(null);
+  const [idiesModal, setIdiesModal] = useState(null);
+  const [idiesInitial, setIdiesInitial] = useState(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -155,9 +157,62 @@ export default function DirectorPanel() {
   const pending = campuses.filter(c=>!c.submission_status||c.submission_status==='draft').length;
   const unlockCount = unlockRequests.length;
 
+  // Modal to edit university ID IES for a specific submission
+  function UnivIdiesModal({ submissionId, onClose, onSave, initial }) {
+    const [form, setForm] = useState(initial||{});
+    const [saving, setSaving] = useState(false);
+    const save = async () => {
+      setSaving(true);
+      try {
+        await submissionApi.saveIdIesForSubmission(submissionId, form);
+        onSave && onSave();
+        onClose();
+      } catch(e) { console.error(e); alert('Erro ao guardar ID IES'); }
+      finally { setSaving(false); }
+    };
+    return (
+      <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,0.4)',zIndex:110,display:'flex',alignItems:'center',justifyContent:'center' }}>
+        <div style={{ background:'var(--color-background-primary)',borderRadius:12,padding:20,width:520,maxWidth:'95vw',border:'0.5px solid var(--color-border-tertiary)' }}>
+          <div style={{ fontSize:15,fontWeight:600,marginBottom:10 }}>Editar ID IES — Submissão</div>
+          <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:8 }}>
+            <div>
+              <label style={{ fontSize:12,color:'var(--color-text-secondary)' }}>Nome da Universidade</label>
+              <input value={form.nome||''} onChange={e=>setForm({...form,nome:e.target.value})} style={{ width:'100%' }} />
+            </div>
+            <div>
+              <label style={{ fontSize:12,color:'var(--color-text-secondary)' }}>Sigla</label>
+              <input value={form.sigla||''} onChange={e=>setForm({...form,sigla:e.target.value})} style={{ width:'100%' }} />
+            </div>
+            <div>
+              <label style={{ fontSize:12,color:'var(--color-text-secondary)' }}>Nuit</label>
+              <input value={form.nuit||''} onChange={e=>setForm({...form,nuit:e.target.value})} style={{ width:'100%' }} />
+            </div>
+            <div>
+              <label style={{ fontSize:12,color:'var(--color-text-secondary)' }}>Ano Início</label>
+              <input value={form.ano_inicio||''} onChange={e=>setForm({...form,ano_inicio:e.target.value})} style={{ width:'100%' }} />
+            </div>
+            <div>
+              <label style={{ fontSize:12,color:'var(--color-text-secondary)' }}>Província</label>
+              <input value={form.provincia||''} onChange={e=>setForm({...form,provincia:e.target.value})} style={{ width:'100%' }} />
+            </div>
+            <div>
+              <label style={{ fontSize:12,color:'var(--color-text-secondary)' }}>Distrito</label>
+              <input value={form.distrito||''} onChange={e=>setForm({...form,distrito:e.target.value})} style={{ width:'100%' }} />
+            </div>
+          </div>
+          <div style={{ marginTop:12,display:'flex',gap:8,justifyContent:'flex-end' }}>
+            <button onClick={onClose} style={{ padding:'7px 12px',borderRadius:8,border:'0.5px solid var(--color-border-tertiary)',background:'transparent' }}>Cancelar</button>
+            <button onClick={save} disabled={saving} style={{ padding:'7px 12px',borderRadius:8,background:'#185FA5',color:'#fff' }}>{saving?'A guardar...':'Guardar ID IES'}</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ minHeight:'100vh',background:'var(--color-background-tertiary)' }}>
       {modal!==null && <CampusModal campus={modal==='new'?null:modal} unassigned={unassigned} universityId={user.university_id} onClose={()=>setModal(null)} onSave={load} />}
+      {idiesModal && <UnivIdiesModal submissionId={idiesModal.submissionId} initial={idiesInitial} onClose={()=>{ setIdiesModal(null); setIdiesInitial(null); }} onSave={load} />}
 
       {/* Topbar */}
       <div style={{ background:'var(--color-background-primary)',borderBottom:'0.5px solid var(--color-border-tertiary)',padding:'0 24px',display:'flex',alignItems:'center',height:52 }}>
@@ -250,6 +305,15 @@ export default function DirectorPanel() {
                             </button>
                             <button onClick={()=>handleDownload('xlsx',c.submission_id)} disabled={downloading===`xlsx-${c.submission_id}`} style={{ fontSize:11,padding:'3px 9px',border:'0.5px solid var(--color-border-tertiary)',color:'var(--color-text-secondary)',borderRadius:6,background:'transparent',cursor:'pointer' }}>
                               {downloading===`xlsx-${c.submission_id}`?'...':'Excel'}
+                            </button>
+                            <button onClick={async()=>{
+                              try {
+                                const init = c.university_id ? (await universityApi.getIdies(c.university_id)).data : null;
+                                setIdiesInitial(init);
+                              } catch(e) { console.error(e); setIdiesInitial(null); }
+                              setIdiesModal({ submissionId: c.submission_id, universityId: c.university_id });
+                            }} style={{ fontSize:11,padding:'3px 9px',border:'0.5px solid #185FA5',color:'#185FA5',borderRadius:6,background:'transparent',cursor:'pointer' }}>
+                              ID IES
                             </button>
                           </>)}
                         </div>

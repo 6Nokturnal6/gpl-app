@@ -28,6 +28,7 @@ export const authApi = {
 export const submissionApi = {
   getCurrent: () => api.get('/submissions/current'),
   saveIdIes: (data) => api.put('/submissions/idies', data),
+  saveIdIesForSubmission: (submissionId, data) => api.put(`/submissions/${submissionId}/idies`, data),
   saveEstudantes: (data) => api.put('/submissions/estudantes', data),
   saveDocentes: (data) => api.put('/submissions/docentes', data),
   saveInvestigadores: (data) => api.put('/submissions/investigadores', data),
@@ -90,6 +91,8 @@ export const universityApi = {
   create: (data) => api.post('/universities', data),
   summary: (id) => api.get(`/universities/${id}/summary`),
   submit: (id) => api.post(`/universities/${id}/submit`),
+  getIdies: (id) => api.get(`/universities/${id}/idies`),
+  saveIdies: (id, data) => api.put(`/universities/${id}/idies`, data),
 };
 
 export const lockApi = {

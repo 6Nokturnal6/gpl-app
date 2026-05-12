@@ -182,4 +182,28 @@ router.get('/revoked-jtis', async (req, res) => {
   }
 });
 
+// DELETE /api/admin/revoked-jtis/:jti — allow superadmin to remove revoked marker (test/ops)
+router.delete('/revoked-jtis/:jti', async (req, res) => {
+  try {
+    const { jti } = req.params;
+    await db.query('DELETE FROM revoked_jtis WHERE jti=$1', [jti]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Failed to delete revoked_jti:', err);
+    res.status(500).json({ error: 'Failed to delete' });
+  }
+});
+
+// DELETE /api/admin/issued-jtis/:jti — remove recorded issued jti (test/ops)
+router.delete('/issued-jtis/:jti', async (req, res) => {
+  try {
+    const { jti } = req.params;
+    await db.query('DELETE FROM issued_jtis WHERE jti=$1', [jti]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Failed to delete issued_jti:', err);
+    res.status(500).json({ error: 'Failed to delete' });
+  }
+});
+
 module.exports = router;

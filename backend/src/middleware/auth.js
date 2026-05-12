@@ -23,11 +23,17 @@ async function authenticate(req, res, next) {
     // Verify token with optional issuer/audience checks
     req.user = jwt.verify(token, process.env.JWT_SECRET, verifyOptions);
 
-    // Token revocation check (requires revoked_tokens table)
+    // Prefer jti-based revocation if token includes jti claim (future tokens)
     try {
       const db = require('../models/db');
-      const r = await db.query('SELECT 1 FROM revoked_tokens WHERE token=$1 LIMIT 1', [token]);
-      if (r.rows.length) return res.status(401).json({ error: 'Token revoked' });
+      if (req.user && req.user.jti) {
+        const r = await db.query('SELECT 1 FROM revoked_jtis WHERE jti=$1 LIMIT 1', [req.user.jti]);
+        if (r.rows.length) return res.status(401).json({ error: 'Token revoked' });
+      } else {
+        // Fallback to legacy full-token revocation table for existing tokens
+        const r = await db.query('SELECT 1 FROM revoked_tokens WHERE token=$1 LIMIT 1', [token]);
+        if (r.rows.length) return res.status(401).json({ error: 'Token revoked' });
+      }
     } catch (revErr) {
       // If revocation lookup fails, log and deny access to be safe
       console.error('Token revocation check failed:', revErr);

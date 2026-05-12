@@ -8,16 +8,35 @@ const ROLES = {
   admin:              1, // legacy
 };
 
-function authenticate(req, res, next) {
+async function authenticate(req, res, next) {
   const header = req.headers.authorization;
   if (!header || !header.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Missing token' });
   }
+  const token = header.slice(7);
+
+  const verifyOptions = {};
+  if (process.env.JWT_ISSUER) verifyOptions.issuer = process.env.JWT_ISSUER;
+  if (process.env.JWT_AUDIENCE) verifyOptions.audience = process.env.JWT_AUDIENCE;
+
   try {
-    req.user = jwt.verify(header.slice(7), process.env.JWT_SECRET);
+    // Verify token with optional issuer/audience checks
+    req.user = jwt.verify(token, process.env.JWT_SECRET, verifyOptions);
+
+    // Token revocation check (requires revoked_tokens table)
+    try {
+      const db = require('../models/db');
+      const r = await db.query('SELECT 1 FROM revoked_tokens WHERE token=$1 LIMIT 1', [token]);
+      if (r.rows.length) return res.status(401).json({ error: 'Token revoked' });
+    } catch (revErr) {
+      // If revocation lookup fails, log and deny access to be safe
+      console.error('Token revocation check failed:', revErr);
+      return res.status(500).json({ error: 'Auth backend error' });
+    }
+
     next();
-  } catch {
-    res.status(401).json({ error: 'Invalid or expired token' });
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
   }
 }
 

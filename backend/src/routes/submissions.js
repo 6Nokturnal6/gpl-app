@@ -1,5 +1,6 @@
 const express = require('express');
 const db = require('../models/db');
+const Joi = require('joi');
 const { authenticate, requireChefe, requireDirector } = require('../middleware/auth');
 const { sendSubmissionConfirmation, sendAdminNewSubmission } = require('../utils/email');
 const audit = require('../utils/audit');
@@ -231,7 +232,25 @@ router.post('/submit', async (req, res, next) => {
 router.put('/:submissionId/idies', requireDirector, async (req, res, next) => {
   try {
     const submissionId = req.params.submissionId;
-    const d = req.body || {};
+    // Validate input
+    const idiesSchema = Joi.object({
+      university_id: Joi.string().uuid().allow(null,'').optional(),
+      nome: Joi.string().max(300).allow('',null),
+      sigla: Joi.string().max(50).allow('',null),
+      nuit: Joi.string().max(50).allow('',null),
+      ano_inicio: Joi.number().integer().min(1900).max(3000).allow(null),
+      provincia: Joi.string().max(100).allow('',null),
+      distrito: Joi.string().max(100).allow('',null),
+      website: Joi.string().uri().allow('',null),
+      contacto: Joi.string().max(50).allow('',null),
+      email: Joi.string().email().allow('',null),
+      responsavel: Joi.string().max(200).allow('',null),
+      funcao: Joi.string().max(100).allow('',null),
+      email_resp: Joi.string().email().allow('',null)
+    });
+    const { error, value } = idiesSchema.validate(req.body || {});
+    if (error) return res.status(400).json({ error: error.details[0].message });
+    const d = value;
 
     // Find submission to resolve university or campus
     const subRes = await db.query('SELECT university_id, campus_id FROM submissions WHERE id=$1', [submissionId]);

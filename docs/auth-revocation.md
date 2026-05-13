@@ -35,6 +35,7 @@ Tests
 - Playwright UI E2E test: e2e/tests/revoke-ui.spec.js — exercises SuperAdmin UI revoke flow.
 
 How to run locally
+
 1) Install deps (backend):
    cd gpl-app/backend && npm ci
 
@@ -49,6 +50,8 @@ How to run locally
 4) Run Playwright E2E (requires app services running):
    export SUPERADMIN_TOKEN='<superadmin-jwt>'
    npx playwright test e2e/tests/revoke-ui.spec.js
+
+See also the concise run checklist at docs/run-checklist.md for a ready-to-copy set of commands, environment-variable examples, and notes for running migrations, backend tests, and Playwright E2E locally.
 
 Notes and operational guidance
 - The UI revoke action uses the same POST /api/admin/revoke-token endpoint and requires superadmin auth.

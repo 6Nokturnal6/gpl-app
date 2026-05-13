@@ -26,9 +26,18 @@ async function authenticate(req, res, next) {
     // Prefer jti-based revocation if token includes jti claim (future tokens)
     try {
       const db = require('../models/db');
+      const redisClient = require('../utils/redisClient');
       if (req.user && req.user.jti) {
+        // Check Redis cache first
+        const cached = await redisClient.isJtiRevoked(req.user.jti);
+        if (cached) return res.status(401).json({ error: 'Token revoked' });
+        // Fallback to DB
         const r = await db.query('SELECT 1 FROM revoked_jtis WHERE jti=$1 LIMIT 1', [req.user.jti]);
-        if (r.rows.length) return res.status(401).json({ error: 'Token revoked' });
+        if (r.rows.length) {
+          // Cache the revoked jti
+          await redisClient.cacheRevokedJti(req.user.jti);
+          return res.status(401).json({ error: 'Token revoked' });
+        }
       } else {
         // Fallback to legacy full-token revocation table for existing tokens
         const r = await db.query('SELECT 1 FROM revoked_tokens WHERE token=$1 LIMIT 1', [token]);

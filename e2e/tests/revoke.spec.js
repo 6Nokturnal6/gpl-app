@@ -13,4 +13,7 @@ test('admin revoke-token API (requires SUPERADMIN_TOKEN)', async ({ request }) =
   expect(res.status()).toBe(200);
   const body = await res.json();
   expect(body).toHaveProperty('ok');
+
+  // cleanup: remove revoked jti
+  await request.delete(`/api/admin/revoked-jtis/${jti}`, { headers: { Authorization: `Bearer ${token}` } });
 });

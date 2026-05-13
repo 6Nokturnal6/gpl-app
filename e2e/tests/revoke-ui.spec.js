@@ -18,6 +18,8 @@ test('Admin UI revoke flow (superadmin required)', async ({ page, request }) => 
   const password = 'Rev0kePass!';
   const register = await request.post('/api/auth/register', { data: { email, password, institution: 'UITest', nome: 'Revoke UI Test' } });
   expect([200,201]).toContain(register.status());
+  const regBody = await register.json();
+  const createdUserId = regBody.user?.id || null;
 
   const login = await request.post('/api/auth/login', { data: { email, password } });
   expect(login.status()).toBe(200);
@@ -27,6 +29,7 @@ test('Admin UI revoke flow (superadmin required)', async ({ page, request }) => 
 
   const jti = decodeJtiFromJwt(userToken);
   expect(jti).toBeTruthy();
+
 
   // 2) Open app as superadmin (set token in localStorage) and navigate to users tab
   await page.goto('/', { waitUntil: 'domcontentloaded' });
@@ -56,4 +59,15 @@ test('Admin UI revoke flow (superadmin required)', async ({ page, request }) => 
   // 5) Verify the user token is now rejected when calling /api/auth/me
   const meRes = await request.get('/api/auth/me', { headers: { Authorization: `Bearer ${userToken}` } });
   expect(meRes.status()).toBe(401);
+
+  // cleanup: remove revoked and issued entries and delete created user
+  try {
+    await request.delete(`/api/admin/revoked-jtis/${jti}`, { headers: { Authorization: `Bearer ${superToken}` } });
+    await request.delete(`/api/admin/issued-jtis/${jti}`, { headers: { Authorization: `Bearer ${superToken}` } });
+    if (createdUserId) {
+      await request.delete(`/api/users/${createdUserId}`, { headers: { Authorization: `Bearer ${superToken}` } });
+    }
+  } catch (e) {
+    console.warn('Cleanup failed', e);
+  }
 });

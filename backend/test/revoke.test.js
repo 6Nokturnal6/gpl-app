@@ -6,11 +6,18 @@ const { v4: uuidv4 } = require('uuid');
 const db = require('../src/models/db');
 
 let app;
+let _test_jti;
 
 describe('Admin revoke-token API', function() {
   before(function() {
     const srv = require('../src/index');
     app = srv.app || srv; // support both exports
+  });
+
+  after(async function() {
+    if (_test_jti) {
+      await db.query('DELETE FROM revoked_jtis WHERE jti=$1', [_test_jti]).catch(()=>{});
+    }
   });
 
   it('should reject unauthenticated requests', async function() {
@@ -21,6 +28,7 @@ describe('Admin revoke-token API', function() {
   it('should allow superadmin to revoke by jti and persist', async function() {
     // create a fake superadmin token with jti
     const jti = uuidv4();
+    _test_jti = jti;
     const token = jwt.sign({ id: '00000000-0000-0000-0000-000000000000', role: 'superadmin' }, process.env.JWT_SECRET || 'testsecret', { jwtid: jti, expiresIn: '1h' });
 
     const res = await request(app).post('/api/admin/revoke-token').set('Authorization', `Bearer ${token}`).send({ jti, reason: 'test' });

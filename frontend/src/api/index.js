@@ -20,9 +20,13 @@ api.interceptors.response.use(
 );
 
 export const authApi = {
-  login: (email, password) => api.post('/auth/login', { email, password }),
+  login: (email, password, totp) => api.post('/auth/login', { email, password, totp }),
   register: (email, password, institution, nome) => api.post('/auth/register', { email, password, institution, nome }),
   me: () => api.get('/auth/me'),
+  refresh: () => api.post('/auth/refresh'),
+  logout: () => api.post('/auth/logout'),
+  mfaSetup: () => api.post('/auth/mfa/setup'),
+  mfaVerify: (secret, token) => api.post('/auth/mfa/verify', { secret, token }),
 };
 
 export const submissionApi = {

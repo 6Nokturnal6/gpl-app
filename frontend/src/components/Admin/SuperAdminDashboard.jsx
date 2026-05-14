@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { APP_NAME } from '../../utils/appConfig';
 import RevokeTokenPanel from './RevokeTokenPanel';
 import JtiManagementPanel from './JtiManagementPanel';
+import MfaPanel from './MfaPanel';
 
 const ROLE_LABEL = { superadmin:'Super Admin', director_gpl:'Director GPL', chefe_departamento:'Chefe Dept.' };
 const ROLE_COLOR = { superadmin:'#185FA5', director_gpl:'#3B6D11', chefe_departamento:'#854F0B' };
@@ -232,6 +233,7 @@ export default function SuperAdminDashboard() {
               <div style={{ marginBottom: 12 }}>
                 <RevokeTokenPanel />
                 <JtiManagementPanel />
+                <MfaPanel />
               </div>
             )}
 

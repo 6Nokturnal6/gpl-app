@@ -1,27 +1,43 @@
-name: Deploy GPL App
+name: Deploy via SSH
 
 on:
+  workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Deploy to server via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Deploy to server over SSH
+        uses: appleboy/ssh-action@v0.1.8
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.DEPLOY_PORT }}
           script: |
-            cd /opt/gpl-app
-            git pull origin main
+            set -euo pipefail
+            cd "${{ secrets.DEPLOY_PATH }}"
+            git fetch --all
+            git reset --hard origin/main
+            # Pull images, stop old stack
             docker compose pull
-            docker compose up -d --build
-            docker image prune -f
-            echo "Deployed at $(date)"
+            docker compose down || true
+            # Run migrations (server must have docker-compose and psql or backend image that can run psql)
+            docker compose run --rm backend bash -lc "until pg_isready -h db -p 5432 -U \"$${POSTGRES_USER:-gpl}\"; do sleep 1; done; psql \"$${DATABASE_URL}\" -f backend/migrations/20260512_add_revoked_jtis.sql || true; psql \"$${DATABASE_URL}\" -f backend/migrations/20260513_add_refresh_tokens_and_mfa.sql || true"
+            # Start services
+            docker compose up -d --remove-orphans
+
+# Secrets required:
+# - DEPLOY_HOST: host reachable by runner (IP or hostname)
+# - DEPLOY_USER: ssh username
+# - SSH_PRIVATE_KEY: private key with access to DEPLOY_USER
+# - DEPLOY_PATH: path on server where repo is checked out (e.g., /srv/gpl-app)
+# - DEPLOY_PORT: (optional) SSH port
+# Ensure the target server has docker and docker-compose installed and the repo cloned at DEPLOY_PATH.
+# If the server is on a private network (not reachable by GitHub Actions), use a self-hosted runner on that server or a VPN.

@@ -5,6 +5,29 @@ const { authenticate, requireAdmin } = require('../middleware/auth');
 const router = express.Router();
 router.use(authenticate, requireAdmin);
 
+// POST /api/admin/revoke-token
+// Body: { jti } OR { token }
+router.post('/revoke-token', async (req, res) => {
+  if (!req.user || req.user.role !== 'superadmin') return res.status(403).json({ error: 'Forbidden' });
+  const { jti, token, reason } = req.body || {};
+  try {
+    let resolvedJti = jti;
+    if (!resolvedJti && token) {
+      try { const decoded = require('jsonwebtoken').decode(token); resolvedJti = decoded?.jti; } catch(e){}
+    }
+    if (resolvedJti) {
+      await db.query('INSERT INTO revoked_jtis (jti, revoked_at, reason) VALUES ($1, now(), $2) ON CONFLICT (jti) DO UPDATE SET revoked_at=EXCLUDED.revoked_at, reason=EXCLUDED.reason', [resolvedJti, reason||null]);
+      try { const redisClient = require('../utils/redisClient'); await redisClient.cacheRevokedJti(resolvedJti); } catch(e){console.error('Redis cache set failed', e);}      
+      return res.json({ ok: true, revoked: 'jti', jti: resolvedJti });
+    }
+    if (token) {
+      await db.query('INSERT INTO revoked_tokens (token, revoked_at, reason) VALUES ($1, now(), $2) ON CONFLICT (token) DO UPDATE SET revoked_at=EXCLUDED.revoked_at, reason=EXCLUDED.reason', [token, reason||null]);
+      return res.json({ ok: true, revoked: 'token' });
+    }
+    return res.status(400).json({ error: 'No jti or token provided' });
+  } catch (err) { console.error('Failed to revoke token:', err); return res.status(500).json({ error: 'Failed to revoke token' }); }
+});
+
 // GET /api/admin/submissions — list all with summary stats
 router.get('/submissions', async (req, res, next) => {
   try {

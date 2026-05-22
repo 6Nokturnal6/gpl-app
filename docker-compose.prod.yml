@@ -1,0 +1,126 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: gpl_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-gpl_db}
+      POSTGRES_USER: ${POSTGRES_USER:-gpl_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/src/models/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    networks:
+      - gpl_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gpl_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: gpl_redis
+    restart: always
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - gpl_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gpl_backend
+    restart: always
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-gpl_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-gpl_db}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER:-agplurio.unilurio.ac.mz}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-agplurio.unilurio.ac.mz}
+      FRONTEND_URL: ${FRONTEND_URL:-https://agplurio.unilurio.ac.mz}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - gpl_network
+
+  scheduler:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gpl_scheduler
+    restart: always
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-gpl_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-gpl_db}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL:-https://agplurio.unilurio.ac.mz}
+      SCHEDULER_ACTIVE: 'true'
+      ROLL_OVER_DRY_RUN: 'false'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - gpl_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: gpl_frontend
+    restart: always
+    environment:
+      NODE_ENV: production
+      REACT_APP_API_URL: https://agplurio.unilurio.ac.mz/api
+    depends_on:
+      - backend
+    networks:
+      - gpl_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: gpl_nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf.prod:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt/live/agplurio.unilurio.ac.mz:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - gpl_network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  gpl_network:
+    driver: bridge
+
+# Notes:
+# - Ensure .env file is created with all required secrets (JWT_SECRET, POSTGRES_PASSWORD, etc.)
+# - SSL certificates must be mounted from /etc/letsencrypt/live/agplurio.unilurio.ac.mz/
+# - Use: docker compose -f docker-compose.prod.yml up -d --build
+# - Run migrations after stack starts: docker compose run --rm backend bash -c "psql \"$DATABASE_URL\" -f backend/migrations/*.sql"

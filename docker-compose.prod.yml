@@ -103,7 +103,7 @@ services:
       - "443:443"
     volumes:
       - ./nginx/nginx.conf.prod:/etc/nginx/nginx.conf:ro
-      - /etc/letsencrypt/live/agplurio.unilurio.ac.mz:/etc/nginx/ssl:ro
+      - /etc/letsencrypt/archive/agplurio.unilurio.ac.mz:/etc/nginx/ssl:ro
     depends_on:
       - backend
       - frontend

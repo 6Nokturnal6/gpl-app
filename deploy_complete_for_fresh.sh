@@ -235,35 +235,6 @@ ALTER TABLE submissions
   ALTER COLUMN year DROP DEFAULT;
 
 -- =====================================================
--- SUBMISSION YEAR
--- =====================================================
-
-ALTER TABLE submissions
-  ADD COLUMN IF NOT EXISTS submission_year INTEGER;
-
--- Backfill existing rows safely
-
-UPDATE submissions
-SET submission_year =
-  EXTRACT(YEAR FROM COALESCE(created_at, now()))::INT
-WHERE submission_year IS NULL;
-
-CREATE INDEX IF NOT EXISTS idx_submissions_year
-  ON submissions (submission_year);
-
--- =====================================================
--- REVOKED TOKENS
--- =====================================================
-
-CREATE TABLE IF NOT EXISTS revoked_tokens (
-  token TEXT PRIMARY KEY,
-
-  revoked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-
-  reason TEXT
-);
-
--- =====================================================
 -- UNIVERSITIES
 -- =====================================================
 
@@ -446,18 +417,24 @@ fi
 # =========================================================
 
 if [ "$SKIP_MIGRATIONS" -eq 0 ]; then
+  echo ""
+  echo "Running migration SQL files..."
 
-echo ""
-echo "Running migration SQL files..."
+  # Ensure postgres container is running and healthy
+  if ! docker exec gpl_postgres pg_isready -U gpl_user -d gpl_db >/dev/null 2>&1; then
+    echo "PostgreSQL not ready. Skipping migrations."
+    exit 1
+  fi
 
-$DC run --rm backend sh -c '
-  psql "${DATABASE_URL:-postgresql://gpl_user:gplpass@postgres:5432/gpl_db}" \
-    -f backend/migrations/20260512_add_revoked_jtis.sql || true
+  # Apply each .sql file in order (alphanumeric)
+  for sql_file in backend/migrations/*.sql; do
+    if [ -f "$sql_file" ]; then
+      echo "Applying $sql_file..."
+      docker exec -i gpl_postgres psql -U gpl_user -d gpl_db < "$sql_file"
+    fi
+  done
 
-  psql "${DATABASE_URL:-postgresql://gpl_user:gplpass@postgres:5432/gpl_db}" \
-    -f backend/migrations/20260513_add_refresh_tokens_and_mfa.sql || true
-' || true
-
+  echo "Migrations completed successfully."
 fi
 
 # =========================================================

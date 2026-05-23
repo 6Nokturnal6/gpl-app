@@ -134,4 +134,4 @@ networks:
 # - Ensure .env file is created with all required secrets (JWT_SECRET, POSTGRES_PASSWORD, etc.)
 # - SSL certificates must be mounted from /etc/letsencrypt/live/agplurio.unilurio.ac.mz/
 # - Use: docker compose -f docker-compose.prod.yml up -d --build
-# - Run migrations after stack starts: docker compose run --rm backend bash -c "psql \"$DATABASE_URL\" -f backend/migrations/*.sql"
+# - Run migrations after stack starts: docker compose run --rm backend sh -c "psql \"$DATABASE_URL\" -f backend/migrations/*.sql"

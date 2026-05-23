@@ -1,4 +1,3 @@
-```bash
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -486,4 +485,4 @@ if [ "$USE_PROD" -eq 1 ]; then
   echo "Production URL:"
   echo "https://agplurio.unilurio.ac.mz"
 fi
-```
+

@@ -113,11 +113,13 @@ services:
       - /etc/letsencrypt/archive/agplurio.unilurio.ac.mz/fullchain1.pem:/etc/nginx/ssl/fullchain.pem:ro
       - /etc/letsencrypt/archive/agplurio.unilurio.ac.mz/privkey1.pem:/etc/nginx/ssl/privkey.pem:ro
     depends_on:
-      - backend
-      - frontend
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_started
     networks:
       - gpl_network
-    condition: service_healthy
+
 
 volumes:
   postgres_data:

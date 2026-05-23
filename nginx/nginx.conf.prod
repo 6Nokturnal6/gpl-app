@@ -6,11 +6,11 @@ http {
     gzip_types    text/plain text/css application/json application/javascript text/xml application/xml;
 
     upstream backend {
-        server backend:4000;
+        server glp_backend:4000;
     }
 
     upstream frontend {
-        server frontend:80;
+        server glp_frontend:80;
     }
 
     # Rate limiting zones

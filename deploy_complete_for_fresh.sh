@@ -450,7 +450,7 @@ if [ "$SKIP_MIGRATIONS" -eq 0 ]; then
 echo ""
 echo "Running migration SQL files..."
 
-$DC run --rm backend bash -c '
+$DC run --rm backend sh -c '
   psql "${DATABASE_URL:-postgresql://gpl_user:gplpass@postgres:5432/gpl_db}" \
     -f backend/migrations/20260512_add_revoked_jtis.sql || true
 

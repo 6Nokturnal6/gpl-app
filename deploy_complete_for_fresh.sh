@@ -35,8 +35,10 @@ done
 
 if [ "$USE_PROD" -eq 1 ]; then
   COMPOSE_FILE="docker-compose.prod.yml"
+  echo "Using production compose file: $COMPOSE_FILE"
 else
   COMPOSE_FILE="docker-compose.yml"
+  echo "Using standard compose file: $COMPOSE_FILE"
 fi
 
 DC="docker compose -f $COMPOSE_FILE"

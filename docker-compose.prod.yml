@@ -57,12 +57,12 @@ services:
         condition: service_healthy
     networks:
       - gpl_network
-    healthcheck:
-        test: ["CMD", "node", "-e", "require('http').get('http://localhost:4000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
-        interval: 10s
-        timeout: 5s
-        retries: 5
-        start_period: 30s
+    # healthcheck:
+    #     test: ["CMD", "node", "-e", "require('http').get('http://localhost:4000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+    #     interval: 10s
+    #     timeout: 5s
+    #     retries: 5
+    #     start_period: 30s
 
   scheduler:
     build:

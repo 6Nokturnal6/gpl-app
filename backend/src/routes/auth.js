@@ -15,6 +15,20 @@ const speakeasy = require('speakeasy');
 
 const VALID_ROLES = ['superadmin','director_gpl','chefe_departamento'];
 
+function jwtVerifyOptions() {
+  const opts = {};
+  if (process.env.JWT_ISSUER) opts.issuer = process.env.JWT_ISSUER;
+  if (process.env.JWT_AUDIENCE) opts.audience = process.env.JWT_AUDIENCE;
+  return opts;
+}
+
+function signAccessToken(payload) {
+  const jti = uuidv4();
+  const signOpts = { jwtid: jti, expiresIn: '8h', ...jwtVerifyOptions() };
+  const token = jwt.sign(payload, process.env.JWT_SECRET, signOpts);
+  return { token, jti };
+}
+
 const registerSchema = Joi.object({
   email:         Joi.string().email().required(),
   password:      Joi.string().min(8).required(),
@@ -36,7 +50,7 @@ router.post('/register', async (req, res, next) => {
       const authHeader = req.headers.authorization;
       if (!authHeader) return res.status(403).json({ error: 'Admin token required to create this role' });
       try {
-        const caller = require('jsonwebtoken').verify(authHeader.slice(7), process.env.JWT_SECRET);
+        const caller = jwt.verify(authHeader.slice(7), process.env.JWT_SECRET, jwtVerifyOptions());
         if (caller.role !== 'superadmin') return res.status(403).json({ error: 'Only superadmin can create this role' });
       } catch { return res.status(401).json({ error: 'Invalid token' }); }
     }
@@ -54,11 +68,9 @@ router.post('/register', async (req, res, next) => {
     );
 
     const user = result.rows[0];
-    const jti = uuidv4();
-    const token = jwt.sign(
-      { id: user.id, role: user.role, university_id: user.university_id, campus_id: user.campus_id },
-      process.env.JWT_SECRET, { jwtid: jti, expiresIn: '8h' }
-    );
+    const { token, jti } = signAccessToken({
+      id: user.id, role: user.role, university_id: user.university_id, campus_id: user.campus_id,
+    });
     // record issued jti for auditing
     try {
       await db.query("INSERT INTO issued_jtis (jti, user_id, issued_at, expires_at) VALUES ($1, $2, now(), now() + INTERVAL '8 hours') ON CONFLICT (jti) DO NOTHING", [jti, user.id]);
@@ -100,11 +112,9 @@ router.post('/login', async (req, res, next) => {
       if (!verified) return res.status(401).json({ error: 'Invalid TOTP' });
     }
 
-    const jti = uuidv4();
-    const token = jwt.sign(
-      { id: user.id, role: user.role, university_id: user.university_id, campus_id: user.campus_id },
-      process.env.JWT_SECRET, { jwtid: jti, expiresIn: '8h' }
-    );
+    const { token, jti } = signAccessToken({
+      id: user.id, role: user.role, university_id: user.university_id, campus_id: user.campus_id,
+    });
     // record issued jti for auditing
     try {
       await db.query("INSERT INTO issued_jtis (jti, user_id, issued_at, expires_at) VALUES ($1, $2, now(), now() + INTERVAL '8 hours') ON CONFLICT (jti) DO NOTHING", [jti, user.id]);
@@ -159,8 +169,9 @@ router.post('/refresh', async (req, res) => {
     const userRes = await db.query('SELECT id,role,university_id,campus_id FROM users WHERE id=$1', [row.user_id]);
     if (!userRes.rows.length) return res.status(404).json({ error: 'User not found' });
     const u = userRes.rows[0];
-    const jti = uuidv4();
-    const token = jwt.sign({ id: u.id, role: u.role, university_id: u.university_id, campus_id: u.campus_id }, process.env.JWT_SECRET, { jwtid: jti, expiresIn: '8h' });
+    const { token, jti } = signAccessToken({
+      id: u.id, role: u.role, university_id: u.university_id, campus_id: u.campus_id,
+    });
     try { await db.query("INSERT INTO issued_jtis (jti, user_id, issued_at, expires_at) VALUES ($1,$2,now(),now()+INTERVAL '8 hours') ON CONFLICT DO NOTHING", [jti, u.id]); } catch(e){console.error('issued_jtis insert failed',e);}    
     res.json({ token });
   } catch (e) { console.error('refresh failed', e); res.status(500).json({ error: 'Refresh failed' }); }

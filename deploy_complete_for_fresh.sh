@@ -49,6 +49,59 @@ echo "Branch: $BRANCH"
 echo "Compose: $COMPOSE_FILE"
 echo "=================================================="
 
+# ---------------------------------------------------------
+# Ensure PostgreSQL user and database exist
+# ---------------------------------------------------------
+ensure_postgres_user() {
+  echo ""
+  echo "Ensuring PostgreSQL user exists..."
+
+  # Load .env if present
+  if [ -f .env ]; then
+    set -a
+    source .env
+    set +a
+  else
+    echo "⚠️  .env file not found – using defaults"
+  fi
+
+  local DB_USER="${POSTGRES_USER:-gpl_user}"
+  local DB_PASS="${POSTGRES_PASSWORD:-}"
+  local DB_NAME="${POSTGRES_DB:-gpl_db}"
+
+  if [ -z "$DB_PASS" ]; then
+    echo "❌ POSTGRES_PASSWORD not set in .env. Aborting."
+    exit 1
+  fi
+
+  # Wait for postgres to accept connections
+  until docker exec gpl_postgres pg_isready -U postgres >/dev/null 2>&1; do
+    sleep 1
+  done
+
+  # Create user if not exists
+  USER_EXISTS=$(docker exec gpl_postgres psql -U postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'")
+  if [ "$USER_EXISTS" = "1" ]; then
+    echo "✅ User '$DB_USER' already exists."
+  else
+    echo "Creating user '$DB_USER'..."
+    docker exec gpl_postgres psql -U postgres -c "CREATE USER $DB_USER WITH LOGIN PASSWORD '$DB_PASS';"
+  fi
+
+  # Create database if not exists
+  DB_EXISTS=$(docker exec gpl_postgres psql -U postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'")
+  if [ "$DB_EXISTS" = "1" ]; then
+    echo "✅ Database '$DB_NAME' already exists."
+  else
+    echo "Creating database '$DB_NAME'..."
+    docker exec gpl_postgres psql -U postgres -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;"
+  fi
+
+  # Grant privileges
+  docker exec gpl_postgres psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
+  echo "✅ Database permissions granted."
+}
+
 # =========================================================
 # Requirements
 # =========================================================
@@ -121,6 +174,12 @@ done
 echo "PostgreSQL is healthy."
 
 # =========================================================
+# Ensure user & database exist (idempotent)
+# =========================================================
+ensure_postgres_user
+
+
+# =========================================================
 # Enable extensions
 # =========================================================
 
@@ -132,47 +191,47 @@ docker exec -i gpl_postgres psql \
   -d gpl_db \
   -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
 
-# =========================================================
-# Detect fresh install
-# =========================================================
-
-echo ""
-echo "Checking database initialization..."
-
-TABLE_EXISTS=$(
-docker exec -i gpl_postgres psql \
-  -U gpl_user \
-  -d gpl_db \
-  -tAc "
-    SELECT EXISTS (
-      SELECT 1
-      FROM information_schema.tables
-      WHERE table_schema='public'
-      AND table_name='users'
-    );
-  "
-)
-
-if [ "$TABLE_EXISTS" != "t" ]; then
-
-  echo ""
-  echo "Fresh installation detected."
-  echo "Importing base schema..."
-
-  docker exec -i gpl_postgres psql \
-    -U gpl_user \
-    -d gpl_db \
-    < backend/src/models/schema.sql
-
-  echo "Base schema imported."
-
-else
-
-  echo ""
-  echo "Existing database detected."
-  echo "Skipping base schema import."
-
-fi
+# # =========================================================
+# # Detect fresh install
+# # =========================================================
+#
+# echo ""
+# echo "Checking database initialization..."
+#
+# TABLE_EXISTS=$(
+# docker exec -i gpl_postgres psql \
+#   -U gpl_user \
+#   -d gpl_db \
+#   -tAc "
+#     SELECT EXISTS (
+#       SELECT 1
+#       FROM information_schema.tables
+#       WHERE table_schema='public'
+#       AND table_name='users'
+#     );
+#   "
+# )
+#
+# if [ "$TABLE_EXISTS" != "t" ]; then
+#
+#   echo ""
+#   echo "Fresh installation detected."
+#   echo "Importing base schema..."
+#
+#   docker exec -i gpl_postgres psql \
+#     -U gpl_user \
+#     -d gpl_db \
+#     < backend/src/models/schema.sql
+#
+#   echo "Base schema imported."
+#
+# else
+#
+#   echo ""
+#   echo "Existing database detected."
+#   echo "Skipping base schema import."
+#
+# fi
 
 # =========================================================
 # Incremental migrations

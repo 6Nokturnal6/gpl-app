@@ -55,9 +55,9 @@ if [ "$SKIP_MIGRATIONS" -eq 0 ]; then
   $DC run --rm backend bash -c "psql \"\${DATABASE_URL:-postgresql://gpl_user:gplpass@postgres:5432/gpl_db}\" -f backend/migrations/20260512_add_revoked_jtis.sql || true; psql \"\${DATABASE_URL:-postgresql://gpl_user:gplpass@postgres:5432/gpl_db}\" -f backend/migrations/20260513_add_refresh_tokens_and_mfa.sql || true" || true
 fi
 
-# Start stack
-echo "Starting stack..."
-$DC up -d --remove-orphans
+# Start stack (rebuild images so git pull changes are included)
+echo "Building and starting stack..."
+$DC up -d --build --remove-orphans
 
 echo "Deployment complete. Use '$DC ps' to check services."
 if [ "$USE_PROD" -eq 1 ]; then

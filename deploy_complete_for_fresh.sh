@@ -54,7 +54,7 @@ echo "=================================================="
 # ---------------------------------------------------------
 ensure_postgres_user() {
   echo ""
-  echo "Ensuring PostgreSQL user exists..."
+  echo "Ensuring PostgreSQL user and database exist..."
 
   # Load .env if present
   if [ -f .env ]; then
@@ -65,41 +65,68 @@ ensure_postgres_user() {
     echo "⚠️  .env file not found – using defaults"
   fi
 
-  local DB_USER="${POSTGRES_USER:-gpl_user}"
-  local DB_PASS="${POSTGRES_PASSWORD:-}"
-  local DB_NAME="${POSTGRES_DB:-gpl_db}"
+  local APP_USER="${POSTGRES_USER:-gpl_user}"
+  local APP_PASS="${POSTGRES_PASSWORD:-}"
+  local APP_DB="${POSTGRES_DB:-gpl_db}"
 
-  if [ -z "$DB_PASS" ]; then
+  if [ -z "$APP_PASS" ]; then
     echo "❌ POSTGRES_PASSWORD not set in .env. Aborting."
     exit 1
   fi
 
-  # Wait for postgres to accept connections
-  until docker exec gpl_postgres pg_isready -U postgres >/dev/null 2>&1; do
+  # Detect the actual superuser (postgres by default, or the value of POSTGRES_USER)
+  local SUPERUSER="postgres"
+  # Try connecting as 'postgres'
+  if docker exec gpl_postgres psql -U "$POSTGRES_USER" -c "SELECT 1" >/dev/null 2>&1; then
+    SUPERUSER="postgres"
+  elif docker exec gpl_postgres psql -U "$APP_USER" -c "SELECT 1" >/dev/null 2>&1; then
+    SUPERUSER="$APP_USER"
+    echo "Superuser detected: $SUPERUSER (from POSTGRES_USER)"
+  else
+    echo "❌ Cannot connect as either 'postgres' or '$APP_USER'."
+    echo "Check that PostgreSQL is running and credentials are correct."
+    exit 1
+  fi
+
+  # Wait for postgres to be ready (already done, but safe)
+  until docker exec gpl_postgres pg_isready -U "$SUPERUSER" >/dev/null 2>&1; do
     sleep 1
   done
 
-  # Create user if not exists
-  USER_EXISTS=$(docker exec gpl_postgres psql -U postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'")
-  if [ "$USER_EXISTS" = "1" ]; then
-    echo "✅ User '$DB_USER' already exists."
+  # If the app user is the same as the superuser, just ensure the database exists.
+  if [ "$APP_USER" = "$SUPERUSER" ]; then
+    echo "App user is the superuser. Checking database..."
+    DB_EXISTS=$(docker exec gpl_postgres psql -U "$SUPERUSER" -tAc "SELECT 1 FROM pg_database WHERE datname='$APP_DB'")
+    if [ "$DB_EXISTS" != "1" ]; then
+      echo "Creating database '$APP_DB'..."
+      docker exec gpl_postgres psql -U "$SUPERUSER" -c "CREATE DATABASE $APP_DB OWNER $APP_USER;"
+    else
+      echo "✅ Database '$APP_DB' already exists."
+    fi
   else
-    echo "Creating user '$DB_USER'..."
-    docker exec gpl_postgres psql -U postgres -c "CREATE USER $DB_USER WITH LOGIN PASSWORD '$DB_PASS';"
+    # Create the application user if it doesn't exist
+    USER_EXISTS=$(docker exec gpl_postgres psql -U "$SUPERUSER" -tAc "SELECT 1 FROM pg_roles WHERE rolname='$APP_USER'")
+    if [ "$USER_EXISTS" = "1" ]; then
+      echo "✅ User '$APP_USER' already exists."
+    else
+      echo "Creating user '$APP_USER'..."
+      docker exec gpl_postgres psql -U "$SUPERUSER" -c "CREATE USER $APP_USER WITH LOGIN PASSWORD '$APP_PASS';"
+    fi
+
+    # Create the database if it doesn't exist
+    DB_EXISTS=$(docker exec gpl_postgres psql -U "$SUPERUSER" -tAc "SELECT 1 FROM pg_database WHERE datname='$APP_DB'")
+    if [ "$DB_EXISTS" = "1" ]; then
+      echo "✅ Database '$APP_DB' already exists."
+    else
+      echo "Creating database '$APP_DB'..."
+      docker exec gpl_postgres psql -U "$SUPERUSER" -c "CREATE DATABASE $APP_DB OWNER $APP_USER;"
+    fi
+
+    # Grant all privileges on the database to the application user
+    docker exec gpl_postgres psql -U "$SUPERUSER" -c "GRANT ALL PRIVILEGES ON DATABASE $APP_DB TO $APP_USER;"
   fi
 
-  # Create database if not exists
-  DB_EXISTS=$(docker exec gpl_postgres psql -U postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'")
-  if [ "$DB_EXISTS" = "1" ]; then
-    echo "✅ Database '$DB_NAME' already exists."
-  else
-    echo "Creating database '$DB_NAME'..."
-    docker exec gpl_postgres psql -U postgres -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;"
-  fi
-
-  # Grant privileges
-  docker exec gpl_postgres psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
-  echo "✅ Database permissions granted."
+  echo "✅ PostgreSQL user/database setup complete."
 }
 
 # =========================================================

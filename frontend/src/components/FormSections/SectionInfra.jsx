@@ -1,5 +1,6 @@
 import { Card, TableWrap, Th, Td, AddRowBtn, SectionTitle } from '../Layout/FormComponents';
 import { emptyLab, emptySala } from '../../hooks/useSubmission';
+import { NEXT_YEAR, CURRENT_YEAR } from '../../utils/appConfig';
 
 const GRAUS = ['Licenciatura','Mestrado','Doutoramento','Pós-Graduação'];
 
@@ -18,7 +19,7 @@ export default function SectionInfra({ data, update }) {
   const removeSala = (i) => update('infra', { labs, salas: salas.filter((_,idx)=>idx!==i) });
 
   return (
-    <Card title="D. Infraestruturas" desc="Laboratórios e salas de aula em funcionamento (2024)">
+    <Card title="D. Infraestruturas" desc={`Laboratórios e salas de aula em funcionamento (${YEAR})`}>
       <SectionTitle>Quadro 1.1 – Laboratórios em funcionamento</SectionTitle>
       <TableWrap>
         <thead>

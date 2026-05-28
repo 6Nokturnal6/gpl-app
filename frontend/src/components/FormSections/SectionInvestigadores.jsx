@@ -1,6 +1,7 @@
 // SectionInvestigadores.jsx
 import { Card, TableWrap, Th, Td, AddRowBtn, SectionTitle } from '../Layout/FormComponents';
 import { emptyInvestigador } from '../../hooks/useSubmission';
+import { NEXT_YEAR, CURRENT_YEAR } from '../../utils/appConfig';
 
 const NACS = ['Moçambicana','Estrangeira'];
 
@@ -68,7 +69,7 @@ export default function SectionInvestigadores({ data, update }) {
   };
 
   return (
-    <Card title="C. Dados sobre Investigação" desc="C.1 – Investigadores por nacionalidade, nível de formação e sexo (2024)">
+    <Card title="C. Dados sobre Investigação" desc={`C.1 – Investigadores por nacionalidade, nível de formação e sexo (${YEAR})`}>
       <SectionTitle>Tempo Inteiro</SectionTitle>
       <InvTable rows={ti} onSet={(i,k,v)=>setRow('tempo_inteiro',i,k,v)} onAdd={()=>addRow('tempo_inteiro')} onRemove={(i)=>removeRow('tempo_inteiro',i)} />
       <SectionTitle>Tempo Parcial</SectionTitle>

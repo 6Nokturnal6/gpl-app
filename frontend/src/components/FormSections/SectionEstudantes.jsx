@@ -26,7 +26,7 @@ export default function SectionEstudantes({ data, update }) {
   const totalM = rows.reduce((a, r) => a + (parseInt(r.mulheres) || 0), 0);
 
   return (
-    <Card title="1. Estatística sobre Corpo Discente" desc={`Quadro 1.1 – Estudantes por curso, género, regime e grau (ano lectivo ${YEAR})`}>
+    <Card title="1. Estatística sobre Corpo Discente" desc={`Quadro 1.1 – Estudantes por curso, género, regime e grau (ano lectivo ${CURRENT_YEAR})`}>
       <ErrorBanner message={errors._general} />
       <TableWrap>
         <thead>

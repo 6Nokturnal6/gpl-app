@@ -69,7 +69,7 @@ export default function SectionInvestigadores({ data, update }) {
   };
 
   return (
-    <Card title="C. Dados sobre Investigação" desc={`C.1 – Investigadores por nacionalidade, nível de formação e sexo (${YEAR})`}>
+    <Card title="C. Dados sobre Investigação" desc={`C.1 – Investigadores por nacionalidade, nível de formação e sexo (${CURRENT_YEAR})`}>
       <SectionTitle>Tempo Inteiro</SectionTitle>
       <InvTable rows={ti} onSet={(i,k,v)=>setRow('tempo_inteiro',i,k,v)} onAdd={()=>addRow('tempo_inteiro')} onRemove={(i)=>removeRow('tempo_inteiro',i)} />
       <SectionTitle>Tempo Parcial</SectionTitle>

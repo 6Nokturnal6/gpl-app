@@ -19,7 +19,7 @@ export default function SectionInfra({ data, update }) {
   const removeSala = (i) => update('infra', { labs, salas: salas.filter((_,idx)=>idx!==i) });
 
   return (
-    <Card title="D. Infraestruturas" desc={`Laboratórios e salas de aula em funcionamento (${YEAR})`}>
+    <Card title="D. Infraestruturas" desc={`Laboratórios e salas de aula em funcionamento (${CURRENT_YEAR})`}>
       <SectionTitle>Quadro 1.1 – Laboratórios em funcionamento</SectionTitle>
       <TableWrap>
         <thead>

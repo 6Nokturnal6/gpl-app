@@ -1,6 +1,7 @@
 import { Card, TableWrap, Th, Td, AddRowBtn, ErrorBanner } from '../Layout/FormComponents';
 import { emptyEstudante } from '../../hooks/useSubmission';
 import { useState } from 'react';
+import { NEXT_YEAR, CURRENT_YEAR } from '../../utils/appConfig';
 
 const GRAUS = ['Licenciatura','Mestrado','Doutoramento','Pós-Graduação','Diploma de Especialização'];
 const REGIMES = ['Presencial','Distância','Misto'];
@@ -25,7 +26,7 @@ export default function SectionEstudantes({ data, update }) {
   const totalM = rows.reduce((a, r) => a + (parseInt(r.mulheres) || 0), 0);
 
   return (
-    <Card title="1. Estatística sobre Corpo Discente" desc="Quadro 1.1 – Estudantes por curso, género, regime e grau (ano lectivo 2024)">
+    <Card title="1. Estatística sobre Corpo Discente" desc={`Quadro 1.1 – Estudantes por curso, género, regime e grau (ano lectivo ${YEAR})`}>
       <ErrorBanner message={errors._general} />
       <TableWrap>
         <thead>

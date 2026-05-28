@@ -486,13 +486,16 @@ if [ "$SKIP_MIGRATIONS" -eq 0 ]; then
 fi
 
 # =========================================================
-# Start full stack
+# Build and start full stack
 # =========================================================
+# --build is required after git pull: without it, compose reuses
+# existing images and code changes (e.g. backend/src) never reach
+# the running containers.
 
 echo ""
-echo "Starting application stack..."
+echo "Building and starting application stack..."
 
-$DC up -d --remove-orphans
+$DC up -d --build --remove-orphans
 
 # =========================================================
 # Final status

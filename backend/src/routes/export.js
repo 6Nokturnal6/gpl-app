@@ -32,7 +32,7 @@ async function resolveUnivId(sub) {
 
 // Fetch all data for a single submission, including campus name
 async function fetchBySubmissionId(subId) {
-  const [subRes, estudantes, docentes, investigadores, financas, labs, salas, bib, comp, previsao,
+  const [subRes, estudantes, docentes, docentesGrupoEtario, docentesAreaFormacao, docentesCursoFormacao, docentesCategoria, docentesRelacao, ctaNivelFormacao, ctaNacionalidade, ctaRelacao, ctaGrupoEtario, investigadores, financas, labs, salas, bib, comp, previsao,
     desportoOrg, desportoPartic, culturaOrg, culturaPartic, grupos, tuna, estudantesAct,
     invGrupoEtario, invAreaFormacao, invConf, invProd, invPubsPares, invPubsDoc, invPubsTipo,
     invOrient, invPesq, invExt, invExtNivel] =
@@ -43,6 +43,15 @@ async function fetchBySubmissionId(subId) {
                 WHERE s.id=$1`, [subId]),
       db.query('SELECT * FROM estudantes WHERE submission_id=$1 ORDER BY sort_order', [subId]),
       db.query('SELECT * FROM docentes WHERE submission_id=$1 ORDER BY regime,sort_order', [subId]),
+      db.query('SELECT * FROM docentes_grupo_etario WHERE submission_id=$1 ORDER BY sort_order', [subId]),
+      db.query('SELECT * FROM docentes_area_formacao WHERE submission_id=$1 ORDER BY sort_order', [subId]),
+      db.query('SELECT * FROM docentes_curso_formacao WHERE submission_id=$1 ORDER BY sort_order', [subId]),
+      db.query('SELECT * FROM docentes_categoria WHERE submission_id=$1 ORDER BY regime,sort_order', [subId]),
+      db.query('SELECT * FROM docentes_relacao WHERE submission_id=$1 ORDER BY sort_order', [subId]),
+      db.query('SELECT * FROM cta_nivel_formacao WHERE submission_id=$1 ORDER BY regime,sort_order', [subId]),
+      db.query('SELECT * FROM cta_nacionalidade WHERE submission_id=$1 ORDER BY sort_order', [subId]),
+      db.query('SELECT * FROM cta_relacao WHERE submission_id=$1 ORDER BY sort_order', [subId]),
+      db.query('SELECT * FROM cta_grupo_etario WHERE submission_id=$1 ORDER BY sort_order', [subId]),
       db.query('SELECT * FROM investigadores WHERE submission_id=$1 ORDER BY regime,sort_order', [subId]),
       db.query('SELECT * FROM financas WHERE submission_id=$1', [subId]),
       db.query('SELECT * FROM infra_labs WHERE submission_id=$1 ORDER BY sort_order', [subId]),
@@ -81,6 +90,19 @@ async function fetchBySubmissionId(subId) {
     campusNome: sub.campus_nome || null,   // passed to PDF cover page
     estudantes: estudantes.rows,
     docentes: docentes.rows,
+    docentesResultados: {
+      grupoEtario: docentesGrupoEtario.rows,
+      areaFormacao: docentesAreaFormacao.rows,
+      cursoFormacao: docentesCursoFormacao.rows,
+      categoria: docentesCategoria.rows,
+      relacao: docentesRelacao.rows,
+    },
+    cta: {
+      nivelFormacao: ctaNivelFormacao.rows,
+      nacionalidade: ctaNacionalidade.rows,
+      relacao: ctaRelacao.rows,
+      grupoEtario: ctaGrupoEtario.rows,
+    },
     investigadores: investigadores.rows,
     investigadoresGrupoEtario: invGrupoEtario.rows,
     investigadoresAreaFormacao: invAreaFormacao.rows,
@@ -147,7 +169,9 @@ async function fetchUniversityData(universityId) {
   if (!subIds.length) {
     return {
       idies,
-      estudantes: [], docentes: [], investigadores: [], investigadoresGrupoEtario: [],
+      estudantes: [], docentes: [], docentesResultados: { grupoEtario: [], areaFormacao: [], cursoFormacao: [], categoria: [], relacao: [] },
+      cta: { nivelFormacao: [], nacionalidade: [], relacao: [], grupoEtario: [] },
+      investigadores: [], investigadoresGrupoEtario: [],
       investigadoresAreaFormacao: [],
       investigadoresResultados: {
         conferencias: [], producao: [], pubsPares: [], pubsPorDocente: [], pubsTipo: [],
@@ -163,12 +187,21 @@ async function fetchUniversityData(universityId) {
     };
   }
 
-  const [estudantes, docentes, investigadores, financas, labs, salas, bib, comp, previsao,
+  const [estudantes, docentes, docentesGrupoEtario, docentesAreaFormacao, docentesCursoFormacao, docentesCategoria, docentesRelacao, ctaNivelFormacao, ctaNacionalidade, ctaRelacao, ctaGrupoEtario, investigadores, financas, labs, salas, bib, comp, previsao,
     desportoOrg, desportoPartic, culturaOrg, culturaPartic, grupos, tuna, estudantesAct,
     invGrupoEtario, invAreaFormacao, invConf, invProd, invPubsPares, invPubsDoc, invPubsTipo,
     invOrient, invPesq, invExt, invExtNivel] = await Promise.all([
     db.query('SELECT * FROM estudantes WHERE submission_id = ANY($1::uuid[]) ORDER BY sort_order', [subIds]),
     db.query('SELECT * FROM docentes WHERE submission_id = ANY($1::uuid[]) ORDER BY regime,sort_order', [subIds]),
+    db.query('SELECT * FROM docentes_grupo_etario WHERE submission_id = ANY($1::uuid[]) ORDER BY sort_order', [subIds]),
+    db.query('SELECT * FROM docentes_area_formacao WHERE submission_id = ANY($1::uuid[]) ORDER BY sort_order', [subIds]),
+    db.query('SELECT * FROM docentes_curso_formacao WHERE submission_id = ANY($1::uuid[]) ORDER BY sort_order', [subIds]),
+    db.query('SELECT * FROM docentes_categoria WHERE submission_id = ANY($1::uuid[]) ORDER BY regime,sort_order', [subIds]),
+    db.query('SELECT * FROM docentes_relacao WHERE submission_id = ANY($1::uuid[]) ORDER BY sort_order', [subIds]),
+    db.query('SELECT * FROM cta_nivel_formacao WHERE submission_id = ANY($1::uuid[]) ORDER BY regime,sort_order', [subIds]),
+    db.query('SELECT * FROM cta_nacionalidade WHERE submission_id = ANY($1::uuid[]) ORDER BY sort_order', [subIds]),
+    db.query('SELECT * FROM cta_relacao WHERE submission_id = ANY($1::uuid[]) ORDER BY sort_order', [subIds]),
+    db.query('SELECT * FROM cta_grupo_etario WHERE submission_id = ANY($1::uuid[]) ORDER BY sort_order', [subIds]),
     db.query('SELECT * FROM investigadores WHERE submission_id = ANY($1::uuid[]) ORDER BY regime,sort_order', [subIds]),
     db.query('SELECT * FROM financas WHERE submission_id = ANY($1::uuid[])', [subIds]),
     db.query('SELECT * FROM infra_labs WHERE submission_id = ANY($1::uuid[]) ORDER BY sort_order', [subIds]),
@@ -218,6 +251,19 @@ async function fetchUniversityData(universityId) {
     idies,
     estudantes: estudantes.rows,
     docentes: docentes.rows,
+    docentesResultados: {
+      grupoEtario: docentesGrupoEtario.rows,
+      areaFormacao: docentesAreaFormacao.rows,
+      cursoFormacao: docentesCursoFormacao.rows,
+      categoria: docentesCategoria.rows,
+      relacao: docentesRelacao.rows,
+    },
+    cta: {
+      nivelFormacao: ctaNivelFormacao.rows,
+      nacionalidade: ctaNacionalidade.rows,
+      relacao: ctaRelacao.rows,
+      grupoEtario: ctaGrupoEtario.rows,
+    },
     investigadores: investigadores.rows,
     investigadoresGrupoEtario: invGrupoEtario.rows,
     investigadoresAreaFormacao: invAreaFormacao.rows,

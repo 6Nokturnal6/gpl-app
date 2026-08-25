@@ -134,7 +134,13 @@ async function buildExcel(data) {
     ['moz_ti_h','Moz TI H'],['moz_ti_m','Moz TI M'],['moz_tp_h','Moz TP H'],['moz_tp_m','Moz TP M'],
     ['estr_ti_h','Estr TI H'],['estr_ti_m','Estr TI M'],['estr_tp_h','Estr TP H'],['estr_tp_m','Estr TP M'],
   ], 'classe_idade');
-  addExtraTable('A3 — Área de formação', 'Área de formação', docExtra.areaFormacao, docDegreeFields, 'area_formacao');
+  addExtraTable('A3 — Docentes por grupo etário, grau e regime', 'Classe de idade', docExtra.grupoEtarioGrau, [
+    ['lic_ti_h','Lic. TI H'],['lic_ti_m','Lic. TI M'],['lic_tp_h','Lic. TP H'],['lic_tp_m','Lic. TP M'],
+    ['mest_ti_h','Mest. TI H'],['mest_ti_m','Mest. TI M'],['mest_tp_h','Mest. TP H'],['mest_tp_m','Mest. TP M'],
+    ['dout_ti_h','Dout. TI H'],['dout_ti_m','Dout. TI M'],['dout_tp_h','Dout. TP H'],['dout_tp_m','Dout. TP M'],
+    ['pos_ti_h','Pós-G. TI H'],['pos_ti_m','Pós-G. TI M'],['pos_tp_h','Pós-G. TP H'],['pos_tp_m','Pós-G. TP M'],
+  ], 'classe_idade');
+  addExtraTable('A4 — Área de formação', 'Área de formação', docExtra.areaFormacao, docDegreeFields, 'area_formacao');
   addExtraTable('A5 — Curso de formação', 'Curso de formação', docExtra.cursoFormacao, docDegreeFields, 'curso_formacao');
   addExtraTable('A6 — Categoria', 'Categoria', docExtra.categoria, [['homens','H'],['mulheres','M']], 'categoria');
   addExtraTable('A7 — Tipo de relação contratual', 'Relação', docExtra.relacao, docDegreeFields.slice(0, 6), 'relacao');

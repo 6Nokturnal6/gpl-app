@@ -47,11 +47,12 @@ router.get('/current', async (req, res, next) => {
       univIdIes = r.rows[0] || null;
     }
 
-    const [estudantes, docentes, docentesGrupoEtario, docentesAreaFormacao, docentesCursoFormacao, docentesCategoria, docentesRelacao, ctaNivelFormacao, ctaNacionalidade, ctaRelacao, ctaGrupoEtario, investigadores, financas, labs, salas, bib, comp, previsao, desportoOrg, desportoPartic, culturaOrg, culturaPartic, grupos, tuna, estudantesAct, invGrupoEtario, invAreaFormacao, invConf, invProd, invPubsPares, invPubsDoc, invPubsTipo, invOrient, invPesq, invExt, invExtNivel, locks] =
+    const [estudantes, docentes, docentesGrupoEtario, docentesGrupoEtarioGrau, docentesAreaFormacao, docentesCursoFormacao, docentesCategoria, docentesRelacao, ctaNivelFormacao, ctaNacionalidade, ctaRelacao, ctaGrupoEtario, investigadores, financas, labs, salas, bib, comp, previsao, desportoOrg, desportoPartic, culturaOrg, culturaPartic, grupos, tuna, estudantesAct, invGrupoEtario, invAreaFormacao, invConf, invProd, invPubsPares, invPubsDoc, invPubsTipo, invOrient, invPesq, invExt, invExtNivel, locks] =
       await Promise.all([
         db.query('SELECT * FROM estudantes WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
         db.query('SELECT * FROM docentes WHERE submission_id=$1 ORDER BY regime,sort_order', [sub.id]),
         db.query('SELECT * FROM docentes_grupo_etario WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM docentes_grupo_etario_grau WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
         db.query('SELECT * FROM docentes_area_formacao WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
         db.query('SELECT * FROM docentes_curso_formacao WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
         db.query('SELECT * FROM docentes_categoria WHERE submission_id=$1 ORDER BY regime,sort_order', [sub.id]),
@@ -95,6 +96,7 @@ router.get('/current', async (req, res, next) => {
       docentes: docentes.rows,
       docentesResultados: {
         grupoEtario: docentesGrupoEtario.rows,
+        grupoEtarioGrau: docentesGrupoEtarioGrau.rows,
         areaFormacao: docentesAreaFormacao.rows,
         cursoFormacao: docentesCursoFormacao.rows,
         categoria: docentesCategoria.rows,
@@ -204,7 +206,7 @@ router.put('/docentes', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// PUT /api/submissions/docentes/resultados — quadros A2-A6 e B1-B4
+// PUT /api/submissions/docentes/resultados — quadros A2-A7 e B1-B4
 router.put('/docentes/resultados', async (req, res, next) => {
   try {
     const sub = await getOrCreateSubmission(req.user.id, req.user.campus_id, req.user.university_id);
@@ -220,6 +222,9 @@ router.put('/docentes/resultados', async (req, res, next) => {
     await saveRows(sub.id, 'docentes_grupo_etario',
       'submission_id,classe_idade,moz_ti_h,moz_ti_m,moz_tp_h,moz_tp_m,estr_ti_h,estr_ti_m,estr_tp_h,estr_tp_m,sort_order',
       d.grupoEtario || [], (r,i) => [sub.id,r.classe_idade||'',r.moz_ti_h||0,r.moz_ti_m||0,r.moz_tp_h||0,r.moz_tp_m||0,r.estr_ti_h||0,r.estr_ti_m||0,r.estr_tp_h||0,r.estr_tp_m||0,i]);
+    await saveRows(sub.id, 'docentes_grupo_etario_grau',
+      'submission_id,classe_idade,lic_ti_h,lic_ti_m,lic_tp_h,lic_tp_m,mest_ti_h,mest_ti_m,mest_tp_h,mest_tp_m,dout_ti_h,dout_ti_m,dout_tp_h,dout_tp_m,pos_ti_h,pos_ti_m,pos_tp_h,pos_tp_m,sort_order',
+      d.grupoEtarioGrau || [], (r,i) => [sub.id,r.classe_idade||'',r.lic_ti_h||0,r.lic_ti_m||0,r.lic_tp_h||0,r.lic_tp_m||0,r.mest_ti_h||0,r.mest_ti_m||0,r.mest_tp_h||0,r.mest_tp_m||0,r.dout_ti_h||0,r.dout_ti_m||0,r.dout_tp_h||0,r.dout_tp_m||0,r.pos_ti_h||0,r.pos_ti_m||0,r.pos_tp_h||0,r.pos_tp_m||0,i]);
     await saveRows(sub.id, 'docentes_area_formacao', degreeFields, d.areaFormacao || [], (r,i) => degreeValues(r,i,'area_formacao'));
     await saveRows(sub.id, 'docentes_curso_formacao', courseFields, d.cursoFormacao || [], (r,i) => degreeValues(r,i,'curso_formacao'));
     await saveRows(sub.id, 'docentes_categoria',

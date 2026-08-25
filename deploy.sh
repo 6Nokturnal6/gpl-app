@@ -63,4 +63,6 @@ fi
 
 echo "Building and restarting application..."
 "${DC[@]}" up -d --build --remove-orphans
+# Recreate/reload the proxy so it does not retain an old backend container IP.
+"${DC[@]}" up -d --force-recreate nginx
 "${DC[@]}" ps

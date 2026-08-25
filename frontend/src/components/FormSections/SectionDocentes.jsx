@@ -1,5 +1,5 @@
 import { Card, TableWrap, Th, Td, AddRowBtn, SectionTitle } from '../Layout/FormComponents';
-import { emptyDocente, emptyDegreeRow, emptyAgeDocente, emptyDocentesResultados } from '../../hooks/useSubmission';
+import { emptyDocente, emptyDegreeRow, emptyAgeDocente, emptyGrupoEtarioGrau, emptyDocentesResultados } from '../../hooks/useSubmission';
 
 const NACS = ['Moçambicana', 'Estrangeira'];
 const DEGREES = [
@@ -7,6 +7,12 @@ const DEGREES = [
   ['dout_h', 'Dout. H'], ['dout_m', 'Dout. M'], ['pos_h', 'Pós-G. H'], ['pos_m', 'Pós-G. M'],
 ];
 const A7_DEGREES = DEGREES.slice(0, 6);
+const A3_FIELDS = [
+  ['lic_ti_h','Lic. TI H'],['lic_ti_m','Lic. TI M'],['lic_tp_h','Lic. TP H'],['lic_tp_m','Lic. TP M'],
+  ['mest_ti_h','Mest. TI H'],['mest_ti_m','Mest. TI M'],['mest_tp_h','Mest. TP H'],['mest_tp_m','Mest. TP M'],
+  ['dout_ti_h','Dout. TI H'],['dout_ti_m','Dout. TI M'],['dout_tp_h','Dout. TP H'],['dout_tp_m','Dout. TP M'],
+  ['pos_ti_h','Pós-G. TI H'],['pos_ti_m','Pós-G. TI M'],['pos_tp_h','Pós-G. TP H'],['pos_tp_m','Pós-G. TP M'],
+];
 const CTA_DEGREES = [
   ['ensino_primario_h', 'Prim. H'], ['ensino_primario_m', 'Prim. M'],
   ['secundario_1_h', 'Sec.1 H'], ['secundario_1_m', 'Sec.1 M'],
@@ -55,6 +61,7 @@ export default function SectionDocentes({ data, update }) {
   const loaded = data.docentesResultados || {};
   const result = { ...defaults, ...loaded,
     grupoEtario: loaded.grupoEtario?.length ? loaded.grupoEtario : defaults.grupoEtario,
+    grupoEtarioGrau: loaded.grupoEtarioGrau?.length ? loaded.grupoEtarioGrau : defaults.grupoEtarioGrau,
     areaFormacao: loaded.areaFormacao?.length ? loaded.areaFormacao : defaults.areaFormacao,
     cursoFormacao: loaded.cursoFormacao?.length ? loaded.cursoFormacao : defaults.cursoFormacao,
     categoria: loaded.categoria?.length ? loaded.categoria : defaults.categoria,
@@ -95,6 +102,8 @@ export default function SectionDocentes({ data, update }) {
     <DocenteTable rows={tp} regime="tempo_parcial" onSet={(i,k,v) => setBase('tempo_parcial', tp, i, k, v)} onAdd={() => update('docentes', [...all, { ...emptyDocente('tempo_parcial') }])} onRemove={(i) => update('docentes', all.filter((r) => !(r.regime === 'tempo_parcial' && tp.indexOf(r) === i)))} />
     <SectionTitle>A2 – Docentes por grupo etário</SectionTitle>
     <AgeTable rows={result.grupoEtario || []} {...editAge('grupoEtario')} />
+    <SectionTitle>A3 – Docentes por grupo etário, grau e regime</SectionTitle>
+    <EditableTable rows={result.grupoEtarioGrau || []} labelKey="classe_idade" labelHeader="Classe de idade" fields={A3_FIELDS} onSet={(i,k,v) => setRows('grupoEtarioGrau', (result.grupoEtarioGrau || []).map((r, idx) => idx === i ? { ...r, [k]: v } : r))} onAdd={() => setRows('grupoEtarioGrau', [...(result.grupoEtarioGrau || []), emptyGrupoEtarioGrau()])} onRemove={(i) => setRows('grupoEtarioGrau', result.grupoEtarioGrau.filter((_, idx) => idx !== i))} />
     <SectionTitle>A4 – Área de formação</SectionTitle>
     <EditableTable rows={result.areaFormacao || []} labelKey="area_formacao" labelHeader="Área de formação" fields={DEGREES} {...editRows('areaFormacao','area_formacao')} />
     <SectionTitle>A5 – Curso de formação</SectionTitle>

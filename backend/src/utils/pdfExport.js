@@ -235,11 +235,22 @@ function buildPdfBuffer(data) {
       ['dout_h', 'Dout.H'], ['dout_m', 'Dout.M'],
     ];
     const degreeCols = [{ label: 'Descrição', w: 155 }, ...degreeKeys.map(([, label]) => ({ label, w: 50, align: 'center' }))];
+    const ageDegreeKeys = [
+      ['lic_ti_h','Lic.TI H'],['lic_ti_m','Lic.TI M'],['lic_tp_h','Lic.TP H'],['lic_tp_m','Lic.TP M'],
+      ['mest_ti_h','Mest.TI H'],['mest_ti_m','Mest.TI M'],['mest_tp_h','Mest.TP H'],['mest_tp_m','Mest.TP M'],
+      ['dout_ti_h','Dout.TI H'],['dout_ti_m','Dout.TI M'],['dout_tp_h','Dout.TP H'],['dout_tp_m','Dout.TP M'],
+      ['pos_ti_h','Pós.TI H'],['pos_ti_m','Pós.TI M'],['pos_tp_h','Pós.TP H'],['pos_tp_m','Pós.TP M'],
+    ];
+    const ageDegreeCols = [{ label: 'Classe de idade', w: 95 }, ...ageDegreeKeys.map(([, label]) => ({ label, w: 34, align: 'center' }))];
+    addDocExtraTable('A3 — Docentes por grupo etário, grau e regime', ageDegreeCols, data.docentesResultados?.grupoEtarioGrau,
+      (r) => [r.classe_idade, ...ageDegreeKeys.map(([key]) => r[key] || 0)]);
+    addDocExtraTable('A4 — Docentes por área de formação, grau e sexo', degreeCols, data.docentesResultados?.areaFormacao, (r) => [r.area_formacao, ...degreeKeys.map(([key]) => r[key] || 0)]);
     addDocExtraTable('A5 — Docentes por curso de formação, grau e sexo', degreeCols, data.docentesResultados?.cursoFormacao, (r) => [r.curso_formacao, ...degreeKeys.map(([key]) => r[key] || 0)]);
     const categoryCols = [{ label: 'Categoria', w: 300 }, { label: 'Homens', w: 70, align: 'center' }, { label: 'Mulheres', w: 70, align: 'center' }];
     addDocExtraTable('A6 — Docentes por regime, categoria e sexo', categoryCols, data.docentesResultados?.categoria, (r) => [
       `${r.regime === 'tempo_inteiro' ? 'Tempo inteiro' : 'Tempo parcial'} — ${r.categoria || ''}`, r.homens || 0, r.mulheres || 0,
     ]);
+    addDocExtraTable('A7 — Docentes por relação contratual, grau e sexo', degreeCols, data.docentesResultados?.relacao, (r) => [r.relacao, ...degreeKeys.map(([key]) => r[key] || 0)]);
     const ctaKeys = [
       ['ensino_primario_h', 'Prim.H'], ['ensino_primario_m', 'Prim.M'], ['secundario_1_h', 'Sec1.H'], ['secundario_1_m', 'Sec1.M'],
       ['secundario_2_h', 'Sec2.H'], ['secundario_2_m', 'Sec2.M'], ['bacharel_h', 'Bach.H'], ['bacharel_m', 'Bach.M'],

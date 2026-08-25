@@ -474,15 +474,15 @@ function buildPdfBuffer(data) {
 
     subTitle('VI. Desporto e Cultura');
     const cult = summary.cultura || {};
-    const cultCols = [{ label: 'Indicador', w: 320 }, { label: 'Total', w: 135, align: 'center', total: true }];
-    tableHeader(cultCols);
-    tableRow(cultCols, ['N.º de eventos desportivos', cult.totalEventosDesportivos || 0], false);
-    tableRow(cultCols, ['N.º de eventos culturais', cult.totalEventosCulturais || 0], true);
-    tableRow(cultCols, ['Grupos culturais existentes', cult.totalGruposCulturais || 0], false);
-    tableRow(cultCols, ['Membros da tuna académica', cult.totalTunaAcademica || 0], true);
-    tableRow(cultCols, ['Estudantes envolvidos em eventos desportivos', cult.totalEstudantesDesporto || 0], false);
-    tableRow(cultCols, ['Estudantes envolvidos em eventos culturais', cult.totalEstudantesCultura || 0], true);
-    totalRow(cultCols, ['Total geral de estudantes envolvidos', (cult.totalEstudantesDesporto || 0) + (cult.totalEstudantesCultura || 0)]);
+    const cultSummaryCols = [{ label: 'Indicador', w: 320 }, { label: 'Total', w: 135, align: 'center', total: true }];
+    tableHeader(cultSummaryCols);
+    tableRow(cultSummaryCols, ['N.º de eventos desportivos', cult.totalEventosDesportivos || 0], false);
+    tableRow(cultSummaryCols, ['N.º de eventos culturais', cult.totalEventosCulturais || 0], true);
+    tableRow(cultSummaryCols, ['Grupos culturais existentes', cult.totalGruposCulturais || 0], false);
+    tableRow(cultSummaryCols, ['Membros da tuna académica', cult.totalTunaAcademica || 0], true);
+    tableRow(cultSummaryCols, ['Estudantes envolvidos em eventos desportivos', cult.totalEstudantesDesporto || 0], false);
+    tableRow(cultSummaryCols, ['Estudantes envolvidos em eventos culturais', cult.totalEstudantesCultura || 0], true);
+    totalRow(cultSummaryCols, ['Total geral de estudantes envolvidos', (cult.totalEstudantesDesporto || 0) + (cult.totalEstudantesCultura || 0)]);
 
     // ==================== FINAL PAGE NUMBERING ====================
     const range = doc.bufferedPageRange();

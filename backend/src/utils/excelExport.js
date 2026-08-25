@@ -127,7 +127,7 @@ async function buildExcel(data) {
   };
   addExtraTable('A3 — Área de formação', 'Área de formação', docExtra.areaFormacao, docDegreeFields);
   addExtraTable('A4 — Curso de formação', 'Curso de formação', docExtra.cursoFormacao, docDegreeFields);
-  addExtraTable('A6 — Relação contratual', 'Relação', docExtra.relacao, docDegreeFields);
+  addExtraTable('A7 — Tipo de relação contratual', 'Relação', docExtra.relacao, docDegreeFields.slice(0, 6));
   addExtraTable('B2 — CTA por nacionalidade', 'nacionalidade', cta.nacionalidade, [
     ['ensino_primario_h','Prim. H'],['ensino_primario_m','Prim. M'],['secundario_1_h','Sec.1 H'],['secundario_1_m','Sec.1 M'],
     ['secundario_2_h','Sec.2 H'],['secundario_2_m','Sec.2 M'],['bacharel_h','Bach. H'],['bacharel_m','Bach. M'],
@@ -506,7 +506,7 @@ async function buildExcel(data) {
   addSumRow(['Tempo Inteiro',summary.docentes.ti.h,summary.docentes.ti.m,summary.docentes.ti.h+summary.docentes.ti.m,'','',''],false);
   addSumRow(['Tempo Parcial',summary.docentes.tp.h,summary.docentes.tp.m,summary.docentes.tp.h+summary.docentes.tp.m,'','',''],true);
   addSumRow(['TOTAL',summary.docentes.total.h,summary.docentes.total.m,summary.docentes.total.h+summary.docentes.total.m,'','',''],false,true);
-  addSumRow(['Quadros adicionais A2-A6', Object.values(summary.docentesQuadros || {}).slice(0, 5).reduce((a, v) => a + v, 0), '', '', '', '', ''], false);
+  addSumRow(['Quadros adicionais A2-A7', Object.values(summary.docentesQuadros || {}).slice(0, 5).reduce((a, v) => a + v, 0), '', '', '', '', ''], false);
   addSumRow(['Quadros CTA B1-B4', Object.values(summary.docentesQuadros || {}).slice(5).reduce((a, v) => a + v, 0), '', '', '', '', ''], true);
   wsSum.addRow([]);
 

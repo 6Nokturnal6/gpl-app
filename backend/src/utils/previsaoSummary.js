@@ -185,7 +185,7 @@ function computePrevisao(data) {
       a3AreaFormacao: (docRes.areaFormacao || []).length,
       a4CursoFormacao: (docRes.cursoFormacao || []).length,
       a5Categoria: (docRes.categoria || []).length,
-      a6Relacao: (docRes.relacao || []).length,
+      a7Relacao: (docRes.relacao || []).length,
       ctaB1Nivel: (cta.nivelFormacao || []).length,
       ctaB2Nacionalidade: (cta.nacionalidade || []).length,
       ctaB3Relacao: (cta.relacao || []).length,

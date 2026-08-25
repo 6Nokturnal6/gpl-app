@@ -6,6 +6,7 @@ const DEGREES = [
   ['lic_h', 'Lic. H'], ['lic_m', 'Lic. M'], ['mest_h', 'Mest. H'], ['mest_m', 'Mest. M'],
   ['dout_h', 'Dout. H'], ['dout_m', 'Dout. M'], ['pos_h', 'Pós-G. H'], ['pos_m', 'Pós-G. M'],
 ];
+const A7_DEGREES = DEGREES.slice(0, 6);
 const CTA_DEGREES = [
   ['ensino_primario_h', 'Prim. H'], ['ensino_primario_m', 'Prim. M'],
   ['secundario_1_h', 'Sec.1 H'], ['secundario_1_m', 'Sec.1 M'],
@@ -87,7 +88,7 @@ export default function SectionDocentes({ data, update }) {
     onRemove: (i) => saveResults({ cta: { ...cta, [key]: (cta[key] || []).filter((_, idx) => idx !== i) } }),
   });
 
-  return <Card title="A/B. Corpo Docente e CTA" desc="A1–A6: docentes; B1–B4: corpo técnico-administrativo">
+  return <Card title="A/B. Corpo Docente e CTA" desc="A1–A7: docentes; B1–B4: corpo técnico-administrativo">
     <SectionTitle>A1 – Docentes por regime</SectionTitle>
     <DocenteTable rows={ti} regime="tempo_inteiro" onSet={(i,k,v) => setBase('tempo_inteiro', ti, i, k, v)} onAdd={() => update('docentes', [...all, { ...emptyDocente('tempo_inteiro') }])} onRemove={(i) => update('docentes', all.filter((r) => !(r.regime === 'tempo_inteiro' && ti.indexOf(r) === i)))} />
     <SectionTitle>Tempo Parcial</SectionTitle>
@@ -100,8 +101,8 @@ export default function SectionDocentes({ data, update }) {
     <EditableTable rows={result.cursoFormacao || []} labelKey="curso_formacao" labelHeader="Curso de formação" fields={DEGREES} {...editRows('cursoFormacao','curso_formacao')} />
     <SectionTitle>A5 – Categoria</SectionTitle>
     <EditableTable rows={result.categoria || []} labelKey="categoria" labelHeader="Categoria" fields={[['homens','H'],['mulheres','M']]} onSet={(i,k,v) => setRows('categoria', result.categoria.map((r, idx) => idx === i ? { ...r, [k]: v } : r))} onAdd={() => setRows('categoria', [...result.categoria, { regime: 'tempo_inteiro', categoria: '', homens: 0, mulheres: 0 }])} onRemove={(i) => setRows('categoria', result.categoria.filter((_, idx) => idx !== i))} />
-    <SectionTitle>A6 – Relação contratual</SectionTitle>
-    <EditableTable rows={result.relacao || []} labelKey="relacao" labelHeader="Relação" fields={DEGREES} {...editRows('relacao','relacao')} />
+    <SectionTitle>A7 – Tipo de relação contratual</SectionTitle>
+    <EditableTable rows={result.relacao || []} labelKey="relacao" labelHeader="Tipo de relação contratual" fields={A7_DEGREES} {...editRows('relacao','relacao')} />
     <SectionTitle>B – CTA</SectionTitle>
     <CtaTable rows={cta.nivelFormacao || []} labelKey="regime" labelHeader="B1 – Regime / nível de formação" {...ctaEdit('nivelFormacao','regime')} />
     <CtaTable rows={cta.nacionalidade || []} labelKey="nacionalidade" labelHeader="B2 – Nacionalidade" {...ctaEdit('nacionalidade','nacionalidade')} />

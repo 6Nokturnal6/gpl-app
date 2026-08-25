@@ -372,8 +372,8 @@ async function buildExcel(data) {
   wsPrev.columns = [{width:28},{width:10},{width:22},{width:18},{width:16},{width:10},{width:10},{width:10}];
   wsPrev.addRow([`PREVISÃO / PRELIMINAR PARA ${NEXT_YEAR}`]).getCell(1).style = titleStyle();
   wsPrev.mergeCells('A1:H1');
-  const pHdr = wsPrev.addRow(['Nome do curso','Duração','Área','Grau','Província','Homens','Mulheres','Total']);
-  pHdr.eachCell(c => { c.style = headerStyle(); });
+  const prevHdr = wsPrev.addRow(['Nome do curso','Duração','Área','Grau','Província','Homens','Mulheres','Total']);
+  prevHdr.eachCell(c => { c.style = headerStyle(); });
   let ptH=0, ptM=0;
   (data.previsao || []).forEach(r => {
     const t=(r.homens||0)+(r.mulheres||0);

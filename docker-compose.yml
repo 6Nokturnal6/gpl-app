@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -15,7 +13,7 @@ services:
     networks:
       - gpl_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gpl_user}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gpl_user} -d ${POSTGRES_DB:-gpl_db}"]
       interval: 10s
       timeout: 5s
       retries: 5

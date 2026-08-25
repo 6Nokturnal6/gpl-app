@@ -2,8 +2,6 @@
 // Stub job to generate next-year submissions from templates or previous-year drafts.
 // Usage: require and schedule in server entry (see docs).
 
-const debug = require('debug')('app:yearly-rollover');
-
 async function runYearlyRollover(db, opts = {}) {
   const logger = opts.logger || console;
   const dryRun = !!opts.dryRun;

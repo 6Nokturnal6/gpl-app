@@ -50,7 +50,17 @@ Setup Steps
    # Wait for DB to initialize (postgres healthcheck passes)
 
 7. Run migrations
-   docker compose run --rm backend bash -c "psql \"\${DATABASE_URL}\" -f backend/migrations/20260512_add_revoked_jtis.sql && psql \"\${DATABASE_URL}\" -f backend/migrations/20260513_add_refresh_tokens_and_mfa.sql"
+   ./deploy.sh feature/yearly-rollover --prod
+   # deploy.sh applies schema.sql and every backend/migrations/*.sql file
+
+   For a deliberately empty installation, use only after confirming that all
+   data can be destroyed:
+   CONFIRM_FRESH_DEPLOY=YES \
+   SUPERADMIN_PASSWORD='strong-password' \
+   DIRECTOR_PASSWORD='strong-password' \
+   ./deploy_complete_for_fresh.sh feature/yearly-rollover --prod
+   # The fresh script removes Compose volumes, reapplies all SQL, and recreates
+   # the Super Admin and Director GPL accounts.
 
 8. Verify deployment
    curl https://agplurio.unilurio.ac.mz/api/health

@@ -121,7 +121,10 @@ async function buildExcel(data) {
     const h = wsDoc.addRow([label, ...fields.map(([, name]) => name)]);
     h.eachCell(c => { c.style = headerStyle(); });
     (rows || []).forEach((r) => {
-      const row = wsDoc.addRow([r[label === 'Área de formação' ? 'area_formacao' : label === 'Curso de formação' ? 'curso_formacao' : label === 'Relação' ? 'relacao' : label, ...fields.map(([key]) => r[key] || 0)]);
+      const rowKey = label === 'Área de formação' ? 'area_formacao'
+        : label === 'Curso de formação' ? 'curso_formacao'
+          : label === 'Relação' ? 'relacao' : label;
+      const row = wsDoc.addRow([r[rowKey], ...fields.map(([key]) => r[key] || 0)]);
       row.eachCell(c => { c.style = cellStyle(); });
     });
   };

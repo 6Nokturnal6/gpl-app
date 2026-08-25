@@ -403,6 +403,40 @@ CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at DESC);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS deactivated_at TIMESTAMPTZ;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS deactivated_by UUID REFERENCES users(id);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS mfa_enabled BOOLEAN DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS mfa_secret TEXT;
+
+-- Token revocation and refresh-token tables
+CREATE TABLE IF NOT EXISTS revoked_tokens (
+  token TEXT PRIMARY KEY,
+  revoked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  reason TEXT
+);
+
+CREATE TABLE IF NOT EXISTS revoked_jtis (
+  jti TEXT PRIMARY KEY,
+  revoked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  reason TEXT
+);
+
+CREATE TABLE IF NOT EXISTS issued_jtis (
+  jti TEXT PRIMARY KEY,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  issued_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+  token_id UUID PRIMARY KEY,
+  token_hash TEXT NOT NULL,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  issued_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMPTZ,
+  revoked BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE INDEX IF NOT EXISTS idx_issued_jtis_issued_at ON issued_jtis(issued_at DESC);
+CREATE INDEX IF NOT EXISTS idx_revoked_jtis_revoked_at ON revoked_jtis(revoked_at DESC);
 
 -- University-level ID IES (one per university, filled by Director GPL)
 CREATE TABLE IF NOT EXISTS university_id_ies (

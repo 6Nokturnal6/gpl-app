@@ -229,6 +229,11 @@ function buildPdfBuffer(data) {
     addStudentTable('Quadro 1.11 — Graduados por ano da primeira matrícula', [['curso','Curso',48],['area','Área',28],['subarea','Sub-área',28],['regime','Regime',32],['provincia','Prov.',30],['distrito','Dist.',30],['grau','Grau',38],['ano_primeira_matricula','Ano 1.ª matr.',50]], studentResults.graduadosMatricula, [
       ['antes_2016','<2016'],['ano_2016','2016'],['ano_2017','2017'],['ano_2018','2018'],['ano_2019','2019'],['ano_2020','2020'],['ano_2021','2021'],['ano_2022','2022'],['ano_2023','2023'],
     ]);
+    addStudentTable('Quadro 1.12 — Cursos de curta duração/especialização', [['curso','Curso',45],['area','Área',25],['subarea','Sub-área',25],['regime','Regime',30],['provincia','Prov.',28],['distrito','Dist.',28],['duracao_meses','Meses',32],['grau','Grau',35]], studentResults.curtaDuracao, [['matriculado_h','Mat.H'],['matriculado_m','Mat.M'],['graduado_h','Grad.H'],['graduado_m','Grad.M']]);
+    addStudentTable('Quadro 1.13 — Desistências, óbitos e anulações', [['curso','Curso',50],['area','Área',26],['subarea','Sub-área',26],['regime','Regime',30],['provincia','Prov.',28],['distrito','Dist.',28],['grau','Grau',35],['causa','Causa',55]], studentResults.desistencias, [['homens','H'],['mulheres','M']]);
+    addStudentTable('Quadro 1.14 — Estudantes bolseiros por curso', [['curso','Curso',35],['area','Área',22],['subarea','Sub-área',22],['regime','Regime',25],['nacionalidade','Nac.',25],['provincia','Prov.',25],['distrito','Dist.',25],['pais','País',30],['tipo_bolsa','Bolsa',35],['financiador','Financ.',35],['grau','Grau',30]], studentResults.bolseirosCurso, statKeys);
+    addStudentTable('Quadro 1.15 — Bolseiros por faixa etária', [['classe_idade','Classe de idade',100]], studentResults.bolseirosFaixa, statKeys);
+    addStudentTable('Quadro 1.16 — Bolseiros por província de naturalidade', [['provincia','Província',100]], studentResults.bolseirosProvincia, statKeys);
 
     // Docentes
     startNewSection('A. Corpo Docente — ' + YEAR);

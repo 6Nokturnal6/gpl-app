@@ -1,5 +1,5 @@
 import { Card, TableWrap, Th, Td, AddRowBtn, ErrorBanner } from '../Layout/FormComponents';
-import { emptyEstudante, emptyEstudanteVaga, emptyEstudanteCursoEstatistica, emptyEstudanteNacionalidade, emptyEstudanteEstrangeiro, emptyEstudanteNecessidade, emptyEstudanteOutraNecessidade, emptyEstudanteProvincia, emptyEstudanteFaixaEtaria, emptyEstudanteGraduadoMatricula } from '../../hooks/useSubmission';
+import { emptyEstudante, emptyEstudanteVaga, emptyEstudanteCursoEstatistica, emptyEstudanteNacionalidade, emptyEstudanteEstrangeiro, emptyEstudanteNecessidade, emptyEstudanteOutraNecessidade, emptyEstudanteProvincia, emptyEstudanteFaixaEtaria, emptyEstudanteGraduadoMatricula, emptyEstudanteCurtaDuracao, emptyEstudanteDesistencia, emptyEstudanteBolseiroCurso, emptyEstudanteBolseiroFaixa, emptyEstudanteBolseiroProvincia } from '../../hooks/useSubmission';
 import { useState } from 'react';
 import { NEXT_YEAR, CURRENT_YEAR } from '../../utils/appConfig';
 import { validateEstudantes } from '../../utils/validation';
@@ -10,6 +10,7 @@ const NACIONALIDADES = ['Moçambicana','Estrangeira'];
 const STATS_FIELDS = [['ingresso_h','Ingresso H'],['ingresso_m','Ingresso M'],['matriculado_h','Matric. H'],['matriculado_m','Matric. M'],['graduado_h','Graduado H'],['graduado_m','Graduado M']];
 const NEED_FIELDS = [['cadeirante_h','Cadeirante H'],['cadeirante_m','Cadeirante M'],['visual_h','Visual H'],['visual_m','Visual M'],['auditiva_h','Auditiva H'],['auditiva_m','Auditiva M'],['outros_h','Outros H'],['outros_m','Outros M']];
 const YEAR_FIELDS = [['antes_2016','Antes de 2016'],['ano_2016','2016'],['ano_2017','2017'],['ano_2018','2018'],['ano_2019','2019'],['ano_2020','2020'],['ano_2021','2021'],['ano_2022','2022'],['ano_2023','2023']];
+const ENROLMENT_FIELDS = [['matriculado_h','Matric. H'],['matriculado_m','Matric. M'],['graduado_h','Graduado H'],['graduado_m','Graduado M']];
 
 function StatsTable({ rows, fields, textFields, onSet, onAdd }) {
   return <><TableWrap><thead><tr>{textFields.map(([key, label]) => <Th key={key}>{label}</Th>)}{fields.map(([key, label]) => <Th key={key} center>{label}</Th>)}</tr></thead>
@@ -169,6 +170,16 @@ export default function SectionEstudantes({ data, update }) {
       <StatsTable rows={extras.faixaEtaria || [emptyEstudanteFaixaEtaria()]} fields={STATS_FIELDS} textFields={[['classe_idade','Classe de idade']]} {...editExtra('faixaEtaria', emptyEstudanteFaixaEtaria)} />
       <h3 style={{ marginTop: 24 }}>Quadro 1.11 – Graduados por ano da primeira matrícula</h3>
       <StatsTable rows={extras.graduadosMatricula || [emptyEstudanteGraduadoMatricula()]} fields={YEAR_FIELDS} textFields={[['curso','Curso'],['area','Área'],['subarea','Sub-área'],['regime','Regime'],['provincia','Província'],['distrito','Distrito'],['grau','Grau'],['ano_primeira_matricula','Ano 1.ª matrícula']]} {...editExtra('graduadosMatricula', emptyEstudanteGraduadoMatricula)} />
+      <h3 style={{ marginTop: 24 }}>Quadro 1.12 – Cursos de curta duração/especialização</h3>
+      <StatsTable rows={extras.curtaDuracao || [emptyEstudanteCurtaDuracao()]} fields={ENROLMENT_FIELDS} textFields={[['curso','Curso'],['area','Área'],['subarea','Sub-área'],['regime','Regime'],['provincia','Província'],['distrito','Distrito'],['duracao_meses','Duração (meses)'],['grau','Grau']]} {...editExtra('curtaDuracao', emptyEstudanteCurtaDuracao)} />
+      <h3 style={{ marginTop: 24 }}>Quadro 1.13 – Desistências, óbitos e anulações</h3>
+      <StatsTable rows={extras.desistencias || [emptyEstudanteDesistencia()]} fields={[['homens','Homens'],['mulheres','Mulheres']]} textFields={[['curso','Curso'],['area','Área'],['subarea','Sub-área'],['regime','Regime'],['provincia','Província'],['distrito','Distrito'],['grau','Grau'],['causa','Causa']]} {...editExtra('desistencias', emptyEstudanteDesistencia)} />
+      <h3 style={{ marginTop: 24 }}>Quadro 1.14 – Estudantes bolseiros por curso</h3>
+      <StatsTable rows={extras.bolseirosCurso || [emptyEstudanteBolseiroCurso()]} fields={STATS_FIELDS} textFields={[['curso','Curso'],['area','Área'],['subarea','Sub-área'],['regime','Regime'],['nacionalidade','Nacionalidade'],['provincia','Província'],['distrito','Distrito'],['pais','País'],['tipo_bolsa','Tipo de bolsa'],['financiador','Financiador'],['grau','Grau']]} {...editExtra('bolseirosCurso', emptyEstudanteBolseiroCurso)} />
+      <h3 style={{ marginTop: 24 }}>Quadro 1.15 – Bolseiros por faixa etária</h3>
+      <StatsTable rows={extras.bolseirosFaixa || [emptyEstudanteBolseiroFaixa()]} fields={STATS_FIELDS} textFields={[['classe_idade','Classe de idade']]} {...editExtra('bolseirosFaixa', emptyEstudanteBolseiroFaixa)} />
+      <h3 style={{ marginTop: 24 }}>Quadro 1.16 – Bolseiros por província de naturalidade</h3>
+      <StatsTable rows={extras.bolseirosProvincia || [emptyEstudanteBolseiroProvincia()]} fields={STATS_FIELDS} textFields={[['provincia','Província']]} {...editExtra('bolseirosProvincia', emptyEstudanteBolseiroProvincia)} />
     </Card>
   );
 }

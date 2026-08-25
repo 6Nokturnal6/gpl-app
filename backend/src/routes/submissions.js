@@ -47,7 +47,7 @@ router.get('/current', async (req, res, next) => {
       univIdIes = r.rows[0] || null;
     }
 
-    const [estudantes, estudantesVagas, estudantesCursoEstatistica, estudantesNacionalidadeEstatistica, estudantesEstrangeiros, estudantesNecessidades, estudantesOutrasNecessidades, estudantesProvinciaConclusao, estudantesProvinciaNaturalidade, estudantesFaixaEtaria, estudantesGraduadosMatricula, docentes, docentesGrupoEtario, docentesGrupoEtarioGrau, docentesAreaFormacao, docentesCursoFormacao, docentesCategoria, docentesRelacao, ctaNivelFormacao, ctaNacionalidade, ctaRelacao, ctaGrupoEtario, investigadores, financas, labs, salas, bib, comp, previsao, desportoOrg, desportoPartic, culturaOrg, culturaPartic, grupos, tuna, estudantesAct, invGrupoEtario, invAreaFormacao, invConf, invProd, invPubsPares, invPubsDoc, invPubsTipo, invOrient, invPesq, invExt, invExtNivel, locks] =
+    const [estudantes, estudantesVagas, estudantesCursoEstatistica, estudantesNacionalidadeEstatistica, estudantesEstrangeiros, estudantesNecessidades, estudantesOutrasNecessidades, estudantesProvinciaConclusao, estudantesProvinciaNaturalidade, estudantesFaixaEtaria, estudantesGraduadosMatricula, estudantesCurtaDuracao, estudantesDesistencias, estudantesBolseirosCurso, estudantesBolseirosFaixa, estudantesBolseirosProvincia, docentes, docentesGrupoEtario, docentesGrupoEtarioGrau, docentesAreaFormacao, docentesCursoFormacao, docentesCategoria, docentesRelacao, ctaNivelFormacao, ctaNacionalidade, ctaRelacao, ctaGrupoEtario, investigadores, financas, labs, salas, bib, comp, previsao, desportoOrg, desportoPartic, culturaOrg, culturaPartic, grupos, tuna, estudantesAct, invGrupoEtario, invAreaFormacao, invConf, invProd, invPubsPares, invPubsDoc, invPubsTipo, invOrient, invPesq, invExt, invExtNivel, locks] =
       await Promise.all([
         db.query('SELECT * FROM estudantes WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
         db.query('SELECT * FROM estudantes_vagas WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
@@ -60,6 +60,11 @@ router.get('/current', async (req, res, next) => {
         db.query('SELECT * FROM estudantes_provincia_naturalidade WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
         db.query('SELECT * FROM estudantes_faixa_etaria WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
         db.query('SELECT * FROM estudantes_graduados_matricula WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM estudantes_cursos_curta_duracao WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM estudantes_desistencias WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM estudantes_bolseiros_curso WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM estudantes_bolseiros_faixa_etaria WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM estudantes_bolseiros_provincia WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
         db.query('SELECT * FROM docentes WHERE submission_id=$1 ORDER BY regime,sort_order', [sub.id]),
         db.query('SELECT * FROM docentes_grupo_etario WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
         db.query('SELECT * FROM docentes_grupo_etario_grau WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
@@ -114,6 +119,11 @@ router.get('/current', async (req, res, next) => {
         provinciaNaturalidade: estudantesProvinciaNaturalidade.rows,
         faixaEtaria: estudantesFaixaEtaria.rows,
         graduadosMatricula: estudantesGraduadosMatricula.rows,
+        curtaDuracao: estudantesCurtaDuracao.rows,
+        desistencias: estudantesDesistencias.rows,
+        bolseirosCurso: estudantesBolseirosCurso.rows,
+        bolseirosFaixa: estudantesBolseirosFaixa.rows,
+        bolseirosProvincia: estudantesBolseirosProvincia.rows,
       },
       docentes: docentes.rows,
       docentesResultados: {
@@ -249,6 +259,11 @@ router.put('/estudantes/resultados', async (req, res, next) => {
     await saveSimpleStats('estudantes_provincia_naturalidade', 'submission_id,provincia,ingresso_h,ingresso_m,matriculado_h,matriculado_m,graduado_h,graduado_m,sort_order', d.provinciaNaturalidade, (r,i) => [sub.id,r.provincia||'',r.ingresso_h||0,r.ingresso_m||0,r.matriculado_h||0,r.matriculado_m||0,r.graduado_h||0,r.graduado_m||0,i]);
     await saveSimpleStats('estudantes_faixa_etaria', 'submission_id,classe_idade,ingresso_h,ingresso_m,matriculado_h,matriculado_m,graduado_h,graduado_m,sort_order', d.faixaEtaria, (r,i) => [sub.id,r.classe_idade||'',r.ingresso_h||0,r.ingresso_m||0,r.matriculado_h||0,r.matriculado_m||0,r.graduado_h||0,r.graduado_m||0,i]);
     await saveSimpleStats('estudantes_graduados_matricula', 'submission_id,curso,area,subarea,regime,provincia,distrito,grau,ano_primeira_matricula,antes_2016,ano_2016,ano_2017,ano_2018,ano_2019,ano_2020,ano_2021,ano_2022,ano_2023,sort_order', d.graduadosMatricula, (r,i) => [sub.id,r.curso,r.area,r.subarea,r.regime,r.provincia,r.distrito,r.grau,r.ano_primeira_matricula,r.antes_2016||0,r.ano_2016||0,r.ano_2017||0,r.ano_2018||0,r.ano_2019||0,r.ano_2020||0,r.ano_2021||0,r.ano_2022||0,r.ano_2023||0,i]);
+    await saveSimpleStats('estudantes_cursos_curta_duracao', 'submission_id,curso,area,subarea,regime,provincia,distrito,duracao_meses,grau,matriculado_h,matriculado_m,graduado_h,graduado_m,sort_order', d.curtaDuracao, (r,i) => [sub.id,r.curso,r.area,r.subarea,r.regime,r.provincia,r.distrito,r.duracao_meses||null,r.grau,r.matriculado_h||0,r.matriculado_m||0,r.graduado_h||0,r.graduado_m||0,i]);
+    await saveSimpleStats('estudantes_desistencias', 'submission_id,curso,area,subarea,regime,provincia,distrito,grau,causa,homens,mulheres,sort_order', d.desistencias, (r,i) => [sub.id,r.curso,r.area,r.subarea,r.regime,r.provincia,r.distrito,r.grau,r.causa,r.homens||0,r.mulheres||0,i]);
+    await saveSimpleStats('estudantes_bolseiros_curso', 'submission_id,curso,area,subarea,regime,nacionalidade,provincia,distrito,pais,tipo_bolsa,financiador,grau,ingresso_h,ingresso_m,matriculado_h,matriculado_m,graduado_h,graduado_m,sort_order', d.bolseirosCurso, (r,i) => [sub.id,r.curso,r.area,r.subarea,r.regime,r.nacionalidade,r.provincia,r.distrito,r.pais,r.tipo_bolsa,r.financiador,r.grau,r.ingresso_h||0,r.ingresso_m||0,r.matriculado_h||0,r.matriculado_m||0,r.graduado_h||0,r.graduado_m||0,i]);
+    await saveSimpleStats('estudantes_bolseiros_faixa_etaria', 'submission_id,classe_idade,ingresso_h,ingresso_m,matriculado_h,matriculado_m,graduado_h,graduado_m,sort_order', d.bolseirosFaixa, (r,i) => [sub.id,r.classe_idade||'',r.ingresso_h||0,r.ingresso_m||0,r.matriculado_h||0,r.matriculado_m||0,r.graduado_h||0,r.graduado_m||0,i]);
+    await saveSimpleStats('estudantes_bolseiros_provincia', 'submission_id,provincia,ingresso_h,ingresso_m,matriculado_h,matriculado_m,graduado_h,graduado_m,sort_order', d.bolseirosProvincia, (r,i) => [sub.id,r.provincia||'',r.ingresso_h||0,r.ingresso_m||0,r.matriculado_h||0,r.matriculado_m||0,r.graduado_h||0,r.graduado_m||0,i]);
     res.json({ ok: true });
   } catch (err) { next(err); }
 });

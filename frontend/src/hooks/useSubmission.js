@@ -186,6 +186,11 @@ export const emptyEstudanteOutraNecessidade = () => ({ curso:'', area:'', subare
 export const emptyEstudanteProvincia = () => ({ provincia:'', ingresso_h:0, ingresso_m:0, matriculado_h:0, matriculado_m:0, graduado_h:0, graduado_m:0 });
 export const emptyEstudanteFaixaEtaria = () => ({ classe_idade:'', ingresso_h:0, ingresso_m:0, matriculado_h:0, matriculado_m:0, graduado_h:0, graduado_m:0 });
 export const emptyEstudanteGraduadoMatricula = () => ({ curso:'', area:'', subarea:'', regime:'Presencial', provincia:'', distrito:'', grau:'Licenciatura', ano_primeira_matricula:'', antes_2016:0, ano_2016:0, ano_2017:0, ano_2018:0, ano_2019:0, ano_2020:0, ano_2021:0, ano_2022:0, ano_2023:0 });
+export const emptyEstudanteCurtaDuracao = () => ({ curso:'', area:'', subarea:'', regime:'Presencial', provincia:'', distrito:'', duracao_meses:0, grau:'', matriculado_h:0, matriculado_m:0, graduado_h:0, graduado_m:0 });
+export const emptyEstudanteDesistencia = () => ({ curso:'', area:'', subarea:'', regime:'Presencial', provincia:'', distrito:'', grau:'', causa:'', homens:0, mulheres:0 });
+export const emptyEstudanteBolseiroCurso = () => ({ curso:'', area:'', subarea:'', regime:'Presencial', nacionalidade:'Moçambicana', provincia:'', distrito:'', pais:'', tipo_bolsa:'', financiador:'', grau:'', ingresso_h:0, ingresso_m:0, matriculado_h:0, matriculado_m:0, graduado_h:0, graduado_m:0 });
+export const emptyEstudanteBolseiroFaixa = () => ({ classe_idade:'', ingresso_h:0, ingresso_m:0, matriculado_h:0, matriculado_m:0, graduado_h:0, graduado_m:0 });
+export const emptyEstudanteBolseiroProvincia = () => ({ provincia:'', ingresso_h:0, ingresso_m:0, matriculado_h:0, matriculado_m:0, graduado_h:0, graduado_m:0 });
 export const emptyDocente = (regime) => ({ regime,provincia:'',distrito:'',nacionalidade:'Moçambicana',lic_h:0,lic_m:0,mest_h:0,mest_m:0,dout_h:0,dout_m:0,pos_h:0,pos_m:0 });
 export const emptyDegreeRow = (label) => ({ [label]:'', lic_h:0, lic_m:0, mest_h:0, mest_m:0, dout_h:0, dout_m:0, pos_h:0, pos_m:0 });
 export const emptyAgeDocente = () => ({ classe_idade:'', moz_ti_h:0, moz_ti_m:0, moz_tp_h:0, moz_tp_m:0, estr_ti_h:0, estr_ti_m:0, estr_tp_h:0, estr_tp_m:0 });

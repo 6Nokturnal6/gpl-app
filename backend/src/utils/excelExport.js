@@ -132,6 +132,11 @@ async function buildExcel(data) {
   addStudentTable('Quadro 1.11 — Graduados por ano da primeira matrícula', [['curso','Curso'],['area','Área'],['subarea','Sub-área'],['regime','Regime'],['provincia','Província'],['distrito','Distrito'],['grau','Grau'],['ano_primeira_matricula','Ano 1.ª matrícula']], studentResults.graduadosMatricula, [
     ['antes_2016','Antes de 2016'],['ano_2016','2016'],['ano_2017','2017'],['ano_2018','2018'],['ano_2019','2019'],['ano_2020','2020'],['ano_2021','2021'],['ano_2022','2022'],['ano_2023','2023'],
   ]);
+  addStudentTable('Quadro 1.12 — Cursos de curta duração/especialização', [['curso','Curso'],['area','Área'],['subarea','Sub-área'],['regime','Regime'],['provincia','Província'],['distrito','Distrito'],['duracao_meses','Duração (meses)'],['grau','Grau']], studentResults.curtaDuracao, [['matriculado_h','Matric. H'],['matriculado_m','Matric. M'],['graduado_h','Graduado H'],['graduado_m','Graduado M']]);
+  addStudentTable('Quadro 1.13 — Desistências, óbitos e anulações', [['curso','Curso'],['area','Área'],['subarea','Sub-área'],['regime','Regime'],['provincia','Província'],['distrito','Distrito'],['grau','Grau'],['causa','Causa']], studentResults.desistencias, [['homens','Homens'],['mulheres','Mulheres']]);
+  addStudentTable('Quadro 1.14 — Estudantes bolseiros por curso', [['curso','Curso'],['area','Área'],['subarea','Sub-área'],['regime','Regime'],['nacionalidade','Nacionalidade'],['provincia','Província'],['distrito','Distrito'],['pais','País'],['tipo_bolsa','Tipo de bolsa'],['financiador','Financiador'],['grau','Grau']], studentResults.bolseirosCurso, statFields);
+  addStudentTable('Quadro 1.15 — Bolseiros por faixa etária', [['classe_idade','Classe de idade']], studentResults.bolseirosFaixa, statFields);
+  addStudentTable('Quadro 1.16 — Bolseiros por província de naturalidade', [['provincia','Província']], studentResults.bolseirosProvincia, statFields);
 
   // ── Sheet 3: Docentes ──────────────────────────────────────────────────────
   const wsDoc = wb.addWorksheet('Docentes');

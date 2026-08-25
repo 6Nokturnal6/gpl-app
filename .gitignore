@@ -4,3 +4,9 @@ node_modules/
 dist/
 .DS_Store
 nginx/ssl/
+assinatura.p12
+cert.pem
+key.pem
+*.p12
+*.pem
+*.xls

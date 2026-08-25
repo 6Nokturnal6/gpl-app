@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useSubmission } from '../hooks/useSubmission';
 import { exportApi, submissionApi } from '../api';
-import { APP_NAME, CURRENT_YEAR, NEXT_YEAR } from '../utils/appConfig';
+import { APP_NAME, CURRENT_YEAR, NEXT_YEAR, SECTION_KEYS, SECTION_LABELS, LOCKABLE_SECTIONS } from '../utils/appConfig';
 
 import SectionIdIes from '../components/FormSections/SectionIdIes';
 import SectionEstudantes from '../components/FormSections/SectionEstudantes';
@@ -11,18 +11,9 @@ import SectionInvestigadores from '../components/FormSections/SectionInvestigado
 import SectionFinancas from '../components/FormSections/SectionFinancas';
 import SectionInfra from '../components/FormSections/SectionInfra';
 import SectionPrevisao from '../components/FormSections/SectionPrevisao';
+import SectionCultura from '../components/FormSections/SectionCultura';
 import Dashboard from '../components/Dashboard/Dashboard';
 
-const SECTION_KEYS = ['idies','estudantes','docentes','investigadores','financas','infra','previsao'];
-const SECTION_LABELS = {
-  idies: 'ID IES',
-  estudantes: `Estudantes ${CURRENT_YEAR}`,
-  docentes: 'Docentes',
-  investigadores: 'Investigadores',
-  financas: 'Finanças',
-  infra: 'Infraestrutura',
-  previsao: `Previsão ${NEXT_YEAR}`,
-};
 const COMPONENTS = {
   idies: SectionIdIes,
   estudantes: SectionEstudantes,
@@ -31,9 +22,10 @@ const COMPONENTS = {
   financas: SectionFinancas,
   infra: SectionInfra,
   previsao: SectionPrevisao,
+  cultura: SectionCultura,
 };
 // Sections chefe can mark as concluído (not idies — that's director's)
-const LOCKABLE = ['estudantes','docentes','investigadores','financas','infra','previsao'];
+const LOCKABLE = LOCKABLE_SECTIONS;
 
 export default function FormPage() {
   const { user, logout } = useAuth();

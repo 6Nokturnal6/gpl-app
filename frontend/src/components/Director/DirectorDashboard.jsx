@@ -1,4 +1,4 @@
-import { CURRENT_YEAR, NEXT_YEAR } from '../../utils/appConfig';
+import { CURRENT_YEAR, NEXT_YEAR, REQUIRED_LOCKS } from '../../utils/appConfig';
 
 function MetricCard({ label, value, sub, color }) {
   return (
@@ -88,6 +88,7 @@ export default function DirectorDashboard({ summary }) {
   const staff       = summary.staff || {};
   const researchers = summary.researchers || {};
   const infra       = summary.infrastructure || {};
+  const cultura     = summary.cultura || {};
 
   const totalEstH = students.reduce((a,r) => a+(parseInt(r.h)||0), 0);
   const totalEstM = students.reduce((a,r) => a+(parseInt(r.m)||0), 0);
@@ -119,6 +120,10 @@ export default function DirectorDashboard({ summary }) {
         <MetricCard label="Laboratórios" value={(parseInt(infra.labs?.total_labs)||0).toLocaleString()} />
         <MetricCard label="Salas de aulas" value={(parseInt(infra.salas?.total_salas)||0).toLocaleString()} />
         <MetricCard label="Financiamento (MT×10³)" value={totalFunding.toLocaleString('pt-MZ')} />
+        <MetricCard label="Eventos desportivos" value={(cultura.totalEventosDesportivos||0).toLocaleString()} />
+        <MetricCard label="Eventos culturais" value={(cultura.totalEventosCulturais||0).toLocaleString()} />
+        <MetricCard label="Estudantes em desporto" value={(cultura.totalEstudantesDesporto||0).toLocaleString()} />
+        <MetricCard label="Estudantes em cultura" value={(cultura.totalEstudantesCultura||0).toLocaleString()} />
       </div>
 
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
@@ -165,7 +170,7 @@ export default function DirectorDashboard({ summary }) {
               const ok = ['submitted','approved'].includes(c.status);
               return (
                 <div key={i} style={{ fontSize:12, padding:'4px 12px', borderRadius:20, background:ok?'#EAF3DE':'var(--color-background-secondary)', color:ok?'#3B6D11':'var(--color-text-secondary)', border:`0.5px solid ${ok?'#C0DD97':'var(--color-border-tertiary)'}` }}>
-                  {ok?'✓ ':''}{c.nome}{parseInt(c.locked_sections)>0&&<span style={{marginLeft:4,fontSize:10,opacity:0.7}}>({c.locked_sections}/6)</span>}
+                  {ok?'✓ ':''}{c.nome}{parseInt(c.locked_sections)>0&&<span style={{marginLeft:4,fontSize:10,opacity:0.7}}>({c.locked_sections}/{REQUIRED_LOCKS})</span>}
                 </div>
               );
             })}

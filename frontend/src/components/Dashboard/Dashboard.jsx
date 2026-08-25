@@ -1,16 +1,6 @@
-import { CURRENT_YEAR, NEXT_YEAR } from '../../utils/appConfig';
+import { CURRENT_YEAR, NEXT_YEAR, SECTION_KEYS, SECTION_LABELS, LOCKABLE_SECTIONS } from '../../utils/appConfig';
 
-const SECTION_KEYS = ['idies','estudantes','docentes','investigadores','financas','infra','previsao'];
-const SECTION_LABELS = {
-  idies: 'ID IES',
-  estudantes: `Estudantes ${CURRENT_YEAR}`,
-  docentes: 'Docentes',
-  investigadores: 'Investigadores',
-  financas: 'Finanças',
-  infra: 'Infraestrutura',
-  previsao: `Previsão ${NEXT_YEAR}`,
-};
-const LOCKABLE = ['estudantes','docentes','investigadores','financas','infra','previsao'];
+const LOCKABLE = LOCKABLE_SECTIONS;
 
 function MetricCard({ label, value, sub }) {
   return (
@@ -64,6 +54,11 @@ function hasData(data, key) {
   if (key === 'financas') return Object.values(data.financas||{}).some(v => parseFloat(v) > 0);
   if (key === 'infra') return (data.infra?.labs||[]).some(r => r.nome) || (data.infra?.salas||[]).some(r => r.unidade);
   if (key === 'previsao') return (data.previsao||[]).some(r => r.curso);
+  if (key === 'cultura') {
+    const c = data.cultura || {};
+    return ['desportoOrganizado', 'desportoParticipacao', 'culturaOrganizada', 'culturaParticipacao', 'grupos', 'tuna', 'estudantesAtividades']
+      .some((k) => (c[k] || []).some((r) => Object.values(r).some((v) => v !== '' && v !== 0 && v != null)));
+  }
   return false;
 }
 
@@ -80,6 +75,13 @@ export default function Dashboard({ data, locks = {} }) {
   const totalPrev = previsaoRows.reduce((a,r) => a+r.h+r.m, 0);
   const totalFunding = (parseFloat(data.financas?.oge)||0)+(parseFloat(data.financas?.doacoes)||0)+(parseFloat(data.financas?.creditos)||0)+(parseFloat(data.financas?.proprias)||0);
   const lockedCount = LOCKABLE.filter(k => locks[k]).length;
+  const cult = data.cultura || {};
+  const cultEstDesporto = [...(cult.desportoOrganizado||[]), ...(cult.desportoParticipacao||[])]
+    .reduce((s, r) => s + (r.estudantes_h||0) + (r.estudantes_m||0), 0);
+  const cultEstCultura = [...(cult.culturaOrganizada||[]), ...(cult.culturaParticipacao||[]), ...(cult.grupos||[])]
+    .reduce((s, r) => s + (r.estudantes_h||0) + (r.estudantes_m||0), 0);
+  const cultEventos = (cult.desportoOrganizado?.length||0) + (cult.desportoParticipacao?.length||0)
+    + (cult.culturaOrganizada?.length||0) + (cult.culturaParticipacao?.length||0);
 
   return (
     <div>
@@ -115,6 +117,9 @@ export default function Dashboard({ data, locks = {} }) {
         <MetricCard label="Cursos" value={(data.estudantes||[]).filter(r=>r.curso).length} />
         <MetricCard label="Financiamento (MT×10³)" value={totalFunding.toLocaleString('pt-MZ')} />
         <MetricCard label={`Previsão ${NEXT_YEAR}`} value={totalPrev.toLocaleString()} />
+        <MetricCard label="Eventos desporto/cultura" value={cultEventos.toLocaleString()} />
+        <MetricCard label="Estudantes em desporto" value={cultEstDesporto.toLocaleString()} />
+        <MetricCard label="Estudantes em cultura" value={cultEstCultura.toLocaleString()} />
       </div>
 
       {/* Charts */}

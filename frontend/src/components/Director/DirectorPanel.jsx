@@ -336,6 +336,10 @@ export default function DirectorPanel() {
                 ['Financiamento (MT×10³)', ((parseFloat(summary?.finances?.oge)||0)+(parseFloat(summary?.finances?.doacoes)||0)+(parseFloat(summary?.finances?.creditos)||0)+(parseFloat(summary?.finances?.proprias)||0)).toLocaleString('pt-MZ')],
                 ['Laboratórios', (parseInt(summary?.infrastructure?.labs?.total_labs)||0).toLocaleString()],
                 ['Salas de aulas', (parseInt(summary?.infrastructure?.salas?.total_salas)||0).toLocaleString()],
+                ['Eventos desportivos', (parseInt(summary?.cultura?.totalEventosDesportivos)||0).toLocaleString()],
+                ['Eventos culturais', (parseInt(summary?.cultura?.totalEventosCulturais)||0).toLocaleString()],
+                ['Estudantes em desporto', (parseInt(summary?.cultura?.totalEstudantesDesporto)||0).toLocaleString()],
+                ['Estudantes em cultura', (parseInt(summary?.cultura?.totalEstudantesCultura)||0).toLocaleString()],
               ].map(([l,v])=>(
                 <div key={l} style={{ background:'var(--color-background-secondary)',borderRadius:8,padding:'12px 16px' }}>
                   <div style={{ fontSize:11,color:'var(--color-text-secondary)',marginBottom:4 }}>{l}</div>

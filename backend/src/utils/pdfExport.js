@@ -209,13 +209,125 @@ function buildPdfBuffer(data) {
     });
 
     // Investigadores
+    const { computeC13 } = require('./investigadoresStats');
     startNewSection('C. Investigadores — ' + YEAR);
-    subTitle('Investigadores por regime, nacionalidade e género');
-    const invCols = [{ label: 'Regime', w: 80 }, { label: 'Nacionalidade', w: 86 }, { label: 'Lic.H', w: 36, align: 'center' }, { label: 'Lic.M', w: 36, align: 'center' }, { label: 'Mest.H', w: 38, align: 'center' }, { label: 'Mest.M', w: 38, align: 'center' }, { label: 'Dout.H', w: 38, align: 'center' }, { label: 'Dout.M', w: 38, align: 'center' }, { label: 'Total', w: 45, align: 'center', total: true }];
+    subTitle('C.1 — Por nacionalidade, regime, formação e sexo');
+    const invCols = [{ label: 'Regime', w: 62 }, { label: 'Nac.', w: 72 }, { label: 'Lic.H', w: 32, align: 'center' }, { label: 'Lic.M', w: 32, align: 'center' }, { label: 'Mest.H', w: 34, align: 'center' }, { label: 'Mest.M', w: 34, align: 'center' }, { label: 'Dout.H', w: 34, align: 'center' }, { label: 'Dout.M', w: 34, align: 'center' }, { label: 'Pós.H', w: 32, align: 'center' }, { label: 'Pós.M', w: 32, align: 'center' }, { label: 'Tot.', w: 38, align: 'center', total: true }];
     tableHeader(invCols);
     (data.investigadores || []).forEach((r, i) => {
-      const tot = (parseInt(r.lic_h) || 0) + (parseInt(r.lic_m) || 0) + (parseInt(r.mest_h) || 0) + (parseInt(r.mest_m) || 0) + (parseInt(r.dout_h) || 0) + (parseInt(r.dout_m) || 0);
-      tableRow(invCols, [r.regime === 'tempo_inteiro' ? 'T.Inteiro' : 'T.Parcial', r.nacionalidade, r.lic_h || 0, r.lic_m || 0, r.mest_h || 0, r.mest_m || 0, r.dout_h || 0, r.dout_m || 0, tot], i % 2 === 1);
+      const tot = (parseInt(r.lic_h) || 0) + (parseInt(r.lic_m) || 0) + (parseInt(r.mest_h) || 0) + (parseInt(r.mest_m) || 0) + (parseInt(r.dout_h) || 0) + (parseInt(r.dout_m) || 0) + (parseInt(r.pos_h) || 0) + (parseInt(r.pos_m) || 0);
+      tableRow(invCols, [r.regime === 'tempo_inteiro' ? 'T.Inteiro' : 'T.Parcial', r.nacionalidade, r.lic_h || 0, r.lic_m || 0, r.mest_h || 0, r.mest_m || 0, r.dout_h || 0, r.dout_m || 0, r.pos_h || 0, r.pos_m || 0, tot], i % 2 === 1);
+    });
+
+    subTitle('C.1.3 — Por tipo de contrato, formação e sexo');
+    const c13Cols = [{ label: 'Contrato', w: 80 }, { label: 'Lic.H', w: 36, align: 'center' }, { label: 'Lic.M', w: 36, align: 'center' }, { label: 'Mest.H', w: 38, align: 'center' }, { label: 'Mest.M', w: 38, align: 'center' }, { label: 'Dout.H', w: 38, align: 'center' }, { label: 'Dout.M', w: 38, align: 'center' }, { label: 'Pós.H', w: 36, align: 'center' }, { label: 'Pós.M', w: 36, align: 'center' }];
+    tableHeader(c13Cols);
+    computeC13(data.investigadores).forEach((r, i) => {
+      tableRow(c13Cols, [r.tipo_contrato, r.lic_h, r.lic_m, r.mest_h, r.mest_m, r.dout_h, r.dout_m, r.pos_h, r.pos_m], i % 2 === 1);
+    });
+
+    subTitle('C.2 — Por grupo etário, nacionalidade e sexo');
+    const etCols = [{ label: 'Idade', w: 88 }, { label: 'Moz.H', w: 38, align: 'center' }, { label: 'Moz.M', w: 38, align: 'center' }, { label: 'Estr.H', w: 38, align: 'center' }, { label: 'Estr.M', w: 38, align: 'center' }, { label: 'Tot.H', w: 40, align: 'center' }, { label: 'Tot.M', w: 40, align: 'center' }, { label: 'Tot.', w: 42, align: 'center', total: true }];
+    ['tempo_inteiro', 'tempo_parcial'].forEach((regime) => {
+      doc.moveDown(0.3);
+      doc.fillColor(MID).fontSize(9).font('Helvetica-Bold').text(regime === 'tempo_inteiro' ? 'Quadro C.2.1 — Tempo Inteiro' : 'Quadro C.2.2 — Tempo Parcial');
+      doc.moveDown(0.2);
+      doc.fillColor(DARK).font('Helvetica').fontSize(10);
+      tableHeader(etCols);
+      (data.investigadoresGrupoEtario || []).filter((r) => r.regime === regime).forEach((r, i) => {
+        const th = (parseInt(r.moz_h) || 0) + (parseInt(r.estr_h) || 0);
+        const tm = (parseInt(r.moz_m) || 0) + (parseInt(r.estr_m) || 0);
+        tableRow(etCols, [r.classe_idade, r.moz_h || 0, r.moz_m || 0, r.estr_h || 0, r.estr_m || 0, th, tm, th + tm], i % 2 === 1);
+      });
+    });
+
+    subTitle('C.3 — Por área de formação, sexo e nacionalidade');
+    const areaCols = [{ label: 'Área', w: 140 }, { label: 'Moz.H', w: 32, align: 'center' }, { label: 'Moz.M', w: 32, align: 'center' }, { label: 'Estr.H', w: 32, align: 'center' }, { label: 'Estr.M', w: 32, align: 'center' }, { label: 'Tot.', w: 36, align: 'center', total: true }];
+    ['tempo_inteiro', 'tempo_parcial'].forEach((regime) => {
+      doc.moveDown(0.3);
+      doc.fillColor(MID).fontSize(9).font('Helvetica-Bold').text(regime === 'tempo_inteiro' ? 'Quadro C.3.1 — Tempo Inteiro' : 'Quadro C.3.2 — Tempo Parcial');
+      doc.moveDown(0.2);
+      doc.fillColor(DARK).font('Helvetica').fontSize(10);
+      tableHeader(areaCols);
+      (data.investigadoresAreaFormacao || []).filter((r) => r.regime === regime).forEach((r, i) => {
+        const tot = (parseInt(r.moz_h) || 0) + (parseInt(r.moz_m) || 0) + (parseInt(r.estr_h) || 0) + (parseInt(r.estr_m) || 0);
+        tableRow(areaCols, [r.area_formacao, r.moz_h || 0, r.moz_m || 0, r.estr_h || 0, r.estr_m || 0, tot], i % 2 === 1);
+      });
+    });
+
+    const res = data.investigadoresResultados || {};
+
+    subTitle('C.4.1 — Conferências');
+    const confCols = [{ label: 'Tipo', w: 70 }, { label: 'Lic.H', w: 34, align: 'center' }, { label: 'Lic.M', w: 34, align: 'center' }, { label: 'Mest.H', w: 36, align: 'center' }, { label: 'Mest.M', w: 36, align: 'center' }, { label: 'Dout.H', w: 36, align: 'center' }, { label: 'Dout.M', w: 36, align: 'center' }, { label: 'Pós.H', w: 34, align: 'center' }, { label: 'Pós.M', w: 34, align: 'center' }];
+    tableHeader(confCols);
+    (res.conferencias || []).forEach((r, i) => {
+      tableRow(confCols, [r.tipo_conferencia, r.lic_h || 0, r.lic_m || 0, r.mest_h || 0, r.mest_m || 0, r.dout_h || 0, r.dout_m || 0, r.pos_h || 0, r.pos_m || 0], i % 2 === 1);
+    });
+
+    subTitle('C.4.2 — Produção científica');
+    const prodCols = [{ label: 'Área', w: 100 }, { label: 'Art', w: 28, align: 'center' }, { label: 'Liv', w: 28, align: 'center' }, { label: 'Cap', w: 28, align: 'center' }, { label: 'CNac', w: 32, align: 'center' }, { label: 'CInt', w: 32, align: 'center' }];
+    tableHeader(prodCols);
+    (res.producao || []).forEach((r, i) => {
+      const art = (r.artigos_h || 0) + (r.artigos_m || 0);
+      const liv = (r.livros_h || 0) + (r.livros_m || 0);
+      const cap = (r.capitulos_h || 0) + (r.capitulos_m || 0);
+      const cn = (r.conf_nac_h || 0) + (r.conf_nac_m || 0);
+      const ci = (r.conf_int_h || 0) + (r.conf_int_m || 0);
+      tableRow(prodCols, [r.area_formacao, art, liv, cap, cn, ci], i % 2 === 1);
+    });
+
+    subTitle('C.4.3 — Pubs. revisão por pares');
+    tableHeader(confCols);
+    (res.pubsPares || []).forEach((r, i) => {
+      tableRow(confCols, [r.provincia || '—', r.lic_h || 0, r.lic_m || 0, r.mest_h || 0, r.mest_m || 0, r.dout_h || 0, r.dout_m || 0, r.pos_h || 0, r.pos_m || 0], i % 2 === 1);
+    });
+
+    subTitle('C.4.4 — Publicações por docente');
+    const bandCols = [{ label: 'N.º', w: 40, align: 'center' }, { label: 'Lic.H', w: 40, align: 'center' }, { label: 'Lic.M', w: 40, align: 'center' }, { label: 'Mest.H', w: 42, align: 'center' }, { label: 'Mest.M', w: 42, align: 'center' }, { label: 'Dout.H', w: 42, align: 'center' }, { label: 'Dout.M', w: 42, align: 'center' }];
+    tableHeader(bandCols);
+    (res.pubsPorDocente || []).forEach((r, i) => {
+      tableRow(bandCols, [r.num_publicacoes, r.lic_h || 0, r.lic_m || 0, r.mest_h || 0, r.mest_m || 0, r.dout_h || 0, r.dout_m || 0], i % 2 === 1);
+    });
+
+    subTitle('C.4.5 — Publicações por tipo');
+    const tipoCols = [{ label: 'Tipo', w: 160 }, { label: 'Lic.H', w: 36, align: 'center' }, { label: 'Lic.M', w: 36, align: 'center' }, { label: 'Mest.H', w: 38, align: 'center' }, { label: 'Mest.M', w: 38, align: 'center' }, { label: 'Dout.H', w: 38, align: 'center' }, { label: 'Dout.M', w: 38, align: 'center' }];
+    tableHeader(tipoCols);
+    (res.pubsTipo || []).forEach((r, i) => {
+      tableRow(tipoCols, [r.tipo_publicacao, r.lic_h || 0, r.lic_m || 0, r.mest_h || 0, r.mest_m || 0, r.dout_h || 0, r.dout_m || 0], i % 2 === 1);
+    });
+
+    subTitle('C.5 — Orientações');
+    const orientLabels = { dissertacao: 'Dissertações', monografia: 'Monografias', tese: 'Teses' };
+    ['dissertacao', 'monografia', 'tese'].forEach((tipo) => {
+      doc.moveDown(0.3);
+      doc.fillColor(MID).fontSize(9).font('Helvetica-Bold').text(orientLabels[tipo]);
+      doc.moveDown(0.2);
+      doc.fillColor(DARK).font('Helvetica').fontSize(10);
+      tableHeader(bandCols);
+      (res.orientacoes || []).filter((r) => r.tipo === tipo).forEach((r, i) => {
+        tableRow(bandCols, [r.num_orientacoes, r.lic_h || 0, r.lic_m || 0, r.mest_h || 0, r.mest_m || 0, r.dout_h || 0, r.dout_m || 0], i % 2 === 1);
+      });
+    });
+
+    subTitle('C.6.1 — Pesquisas');
+    const pesqCols = [{ label: 'N.º', w: 40, align: 'center' }, { label: 'Em curso', w: 70, align: 'center' }, { label: 'Concluídas', w: 70, align: 'center' }];
+    tableHeader(pesqCols);
+    (res.pesquisas || []).forEach((r, i) => {
+      tableRow(pesqCols, [i + 1, r.em_curso || 0, r.concluidas || 0], i % 2 === 1);
+    });
+
+    subTitle('Actividades de Extensão');
+    const extCols = [{ label: 'Acção', w: 280 }, { label: 'Qtd', w: 50, align: 'center' }];
+    tableHeader(extCols);
+    (res.extensao || []).forEach((r, i) => {
+      tableRow(extCols, [r.accao, r.quantidade || 0], i % 2 === 1);
+    });
+
+    subTitle('C.6.2 — Extensão por nível');
+    const enCols = [{ label: 'N.º', w: 40, align: 'center' }, { label: 'Nível', w: 120 }, { label: 'Qtd', w: 50, align: 'center' }];
+    tableHeader(enCols);
+    (res.extensaoNivel || []).forEach((r, i) => {
+      tableRow(enCols, [i + 1, r.nivel || '—', r.quantidade || 0], i % 2 === 1);
     });
 
     // Finanças
@@ -234,7 +346,16 @@ function buildPdfBuffer(data) {
     finRow('Administração', fin.func_admin);
     finRow('Salários – Docentes', fin.sal_docentes);
     finRow('Salários – Técnicos Administrativos', fin.sal_tecnicos);
-    finRow('Total despesas', (parseFloat(fin.func_ensino) || 0) + (parseFloat(fin.func_investig) || 0) + (parseFloat(fin.func_admin) || 0) + (parseFloat(fin.sal_docentes) || 0) + (parseFloat(fin.sal_tecnicos) || 0), true);
+    finRow('Salários – Outros', fin.sal_outros);
+    const totalDespCorrente = (parseFloat(fin.func_ensino) || 0) + (parseFloat(fin.func_investig) || 0) + (parseFloat(fin.func_admin) || 0) + (parseFloat(fin.sal_docentes) || 0) + (parseFloat(fin.sal_tecnicos) || 0) + (parseFloat(fin.sal_outros) || 0);
+    finRow('Subtotal despesas correntes', totalDespCorrente, true);
+    doc.moveDown(0.4);
+    subTitle('Despesa de investimento');
+    finRow('Investimento', fin.desp_invest);
+    finRow('Depreciação', fin.desp_deprec);
+    finRow('Outros', fin.desp_invest_outros);
+    finRow('Reembolso de capital', fin.desp_reembolso);
+    finRow('Grande total', totalDespCorrente + (parseFloat(fin.desp_invest) || 0) + (parseFloat(fin.desp_deprec) || 0) + (parseFloat(fin.desp_invest_outros) || 0) + (parseFloat(fin.desp_reembolso) || 0), true);
 
     // Infraestruturas
     startNewSection('D. Infraestruturas — ' + YEAR);
@@ -249,6 +370,18 @@ function buildPdfBuffer(data) {
     tableHeader(salaCols);
     (data.infra?.salas || []).forEach((r, i) => tableRow(salaCols, [r.unidade, r.provincia, r.grau, r.num_salas || 0], i % 2 === 1));
     totalRow(salaCols, ['Total', '', '', (data.infra?.salas || []).reduce((a, r) => a + (parseInt(r.num_salas) || 0), 0)]);
+    doc.moveDown(0.6);
+    subTitle('Quadro 1.3 – Bibliotecas em funcionamento');
+    const bibCols = [{ label: 'Unidade Orgânica', w: 175 }, { label: 'Província', w: 78 }, { label: 'Distrito', w: 78 }, { label: 'Físicas', w: 50, align: 'center', total: true }, { label: 'Virtuais', w: 50, align: 'center', total: true }];
+    tableHeader(bibCols);
+    (data.infra?.bibliotecas || []).forEach((r, i) => tableRow(bibCols, [r.unidade, r.provincia, r.distrito, r.num_fisicas || 0, r.num_virtuais || 0], i % 2 === 1));
+    totalRow(bibCols, ['Total', '', '', (data.infra?.bibliotecas || []).reduce((a, r) => a + (parseInt(r.num_fisicas) || 0), 0), (data.infra?.bibliotecas || []).reduce((a, r) => a + (parseInt(r.num_virtuais) || 0), 0)]);
+    doc.moveDown(0.6);
+    subTitle('Quadro 1.4 – Computadores para estudantes');
+    const compCols = [{ label: 'Unidade Orgânica', w: 200 }, { label: 'Província', w: 90 }, { label: 'Distrito', w: 90 }, { label: 'N.º', w: 55, align: 'center', total: true }];
+    tableHeader(compCols);
+    (data.infra?.computadores || []).forEach((r, i) => tableRow(compCols, [r.unidade, r.provincia, r.distrito, r.num_computadores || 0], i % 2 === 1));
+    totalRow(compCols, ['Total', '', '', (data.infra?.computadores || []).reduce((a, r) => a + (parseInt(r.num_computadores) || 0), 0)]);
 
     // Previsão
     startNewSection('Previsão / Preliminar para ' + NEXT_YEAR);
@@ -258,6 +391,43 @@ function buildPdfBuffer(data) {
     let ptH = 0, ptM = 0;
     (data.previsao || []).forEach((r, i) => { const h = parseInt(r.homens) || 0, m = parseInt(r.mulheres) || 0; ptH += h; ptM += m; tableRow(prevCols, [r.curso, r.duracao, r.area, r.grau, r.provincia, h, m, h + m], i % 2 === 1); });
     totalRow(prevCols, ['TOTAL', '', '', '', '', ptH, ptM, ptH + ptM]);
+
+    // Desporto e Cultura
+    const cultData = data.cultura || {};
+    const partTotal = (r) => (parseInt(r.estudantes_h) || 0) + (parseInt(r.estudantes_m) || 0) + (parseInt(r.docentes_h) || 0) + (parseInt(r.docentes_m) || 0);
+    const cultCols = [{ label: 'Descrição', w: 200 }, { label: 'Detalhe', w: 120 }, { label: 'Est. H', w: 40, align: 'center' }, { label: 'Est. M', w: 40, align: 'center' }, { label: 'Total', w: 50, align: 'center', total: true }];
+
+    startNewSection('E. Desporto e Cultura — ' + YEAR);
+
+    subTitle('1. Eventos desportivos organizados');
+    tableHeader(cultCols);
+    (cultData.desportoOrganizado || []).forEach((r, i) => tableRow(cultCols, [r.nome_atividade, r.modalidade, r.estudantes_h || 0, r.estudantes_m || 0, partTotal(r)], i % 2 === 1));
+
+    subTitle('2. Participação em eventos desportivos');
+    tableHeader(cultCols);
+    (cultData.desportoParticipacao || []).forEach((r, i) => tableRow(cultCols, [r.nome_atividade, r.entidade_org, r.estudantes_h || 0, r.estudantes_m || 0, partTotal(r)], i % 2 === 1));
+
+    subTitle('3. Atividades culturais organizadas');
+    tableHeader(cultCols);
+    (cultData.culturaOrganizada || []).forEach((r, i) => tableRow(cultCols, [r.nome_atividade, r.tipo_atividade, r.estudantes_h || 0, r.estudantes_m || 0, partTotal(r)], i % 2 === 1));
+
+    subTitle('4. Participação em atividades culturais');
+    tableHeader(cultCols);
+    (cultData.culturaParticipacao || []).forEach((r, i) => tableRow(cultCols, [r.nome_evento, r.entidade_org, r.estudantes_h || 0, r.estudantes_m || 0, partTotal(r)], i % 2 === 1));
+
+    subTitle('5. Grupos culturais');
+    tableHeader(cultCols);
+    (cultData.grupos || []).forEach((r, i) => tableRow(cultCols, [r.nome_grupo, r.expressao_artistica, r.estudantes_h || 0, r.estudantes_m || 0, partTotal(r)], i % 2 === 1));
+
+    subTitle('6. Tuna académica');
+    const tunaCols = [{ label: 'Nome membro', w: 160 }, { label: 'Cargo', w: 120 }, { label: 'Ano ingresso', w: 80, align: 'center' }, { label: 'Distinções', w: 160 }];
+    tableHeader(tunaCols);
+    (cultData.tuna || []).forEach((r, i) => tableRow(tunaCols, [r.nome_membro, r.cargo, r.ano_ingresso || '—', r.distincoes || '—'], i % 2 === 1));
+
+    subTitle('7. Estudantes em atividades');
+    const estActCols = [{ label: 'Nome', w: 130 }, { label: 'Curso', w: 90 }, { label: 'Sexo', w: 40, align: 'center' }, { label: 'Atividade', w: 110 }, { label: 'Evento', w: 110 }];
+    tableHeader(estActCols);
+    (cultData.estudantesAtividades || []).forEach((r, i) => tableRow(estActCols, [r.nome_completo, r.curso, r.sexo || '—', r.atividade, r.evento], i % 2 === 1));
 
     // Sumário Geral
     const { computePrevisao } = require('./previsaoSummary');
@@ -288,14 +458,32 @@ function buildPdfBuffer(data) {
     tableHeader(finSumCols);
     [['OGE', summary.financas.oge], ['Doações', summary.financas.doacoes], ['Créditos', summary.financas.creditos], ['Rec. próprias', summary.financas.proprias]].forEach(([l, v], i) => tableRow(finSumCols, [l, (parseFloat(v) || 0).toLocaleString('pt-MZ')], i % 2 === 1));
     totalRow(finSumCols, ['Total Financiamento', (parseFloat(summary.financas.totalFunding) || 0).toLocaleString('pt-MZ')]);
-    [['Ensino', summary.financas.func_ensino], ['Investigação', summary.financas.func_investig], ['Administração', summary.financas.func_admin], ['Salário Docentes', summary.financas.sal_docentes], ['Salário Técnicos', summary.financas.sal_tecnicos]].forEach(([l, v], i) => tableRow(finSumCols, [l, (parseFloat(v) || 0).toLocaleString('pt-MZ')], i % 2 === 1));
-    totalRow(finSumCols, ['Total Despesas', (parseFloat(summary.financas.totalDesp) || 0).toLocaleString('pt-MZ')]);
+    [['Ensino', summary.financas.func_ensino], ['Investigação', summary.financas.func_investig], ['Administração', summary.financas.func_admin], ['Salário Docentes', summary.financas.sal_docentes], ['Salário Técnicos', summary.financas.sal_tecnicos], ['Salário Outros', summary.financas.sal_outros]].forEach(([l, v], i) => tableRow(finSumCols, [l, (parseFloat(v) || 0).toLocaleString('pt-MZ')], i % 2 === 1));
+    totalRow(finSumCols, ['Subtotal correntes', (parseFloat(summary.financas.totalDespCorrente) || 0).toLocaleString('pt-MZ')]);
+    [['Investimento', summary.financas.desp_invest], ['Depreciação', summary.financas.desp_deprec], ['Outros invest.', summary.financas.desp_invest_outros], ['Reembolso', summary.financas.desp_reembolso]].forEach(([l, v], i) => tableRow(finSumCols, [l, (parseFloat(v) || 0).toLocaleString('pt-MZ')], i % 2 === 1));
+    totalRow(finSumCols, ['Grande total despesas', (parseFloat(summary.financas.totalDesp) || 0).toLocaleString('pt-MZ')]);
 
     subTitle('V. Infraestrutura');
     const infCols = [{ label: 'Tipo', w: 320 }, { label: 'Total', w: 135, align: 'center', total: true }];
     tableHeader(infCols);
     tableRow(infCols, ['Laboratórios', summary.infraestrutura.totalLabs], false);
     tableRow(infCols, ['Salas de aulas', summary.infraestrutura.totalSalas], true);
+    tableRow(infCols, ['Bibliotecas físicas', summary.infraestrutura.totalBibFisicas], false);
+    tableRow(infCols, ['Bibliotecas virtuais', summary.infraestrutura.totalBibVirtuais], true);
+    tableRow(infCols, ['Computadores para estudantes', summary.infraestrutura.totalComputadores], false);
+
+    subTitle('VI. Desporto e Cultura');
+    const cult = summary.cultura || {};
+    const cultCols = [{ label: 'Indicador', w: 320 }, { label: 'Total', w: 135, align: 'center', total: true }];
+    tableHeader(cultCols);
+    tableRow(cultCols, ['N.º de eventos desportivos', cult.totalEventosDesportivos || 0], false);
+    tableRow(cultCols, ['N.º de eventos culturais', cult.totalEventosCulturais || 0], true);
+    tableRow(cultCols, ['Grupos culturais existentes', cult.totalGruposCulturais || 0], false);
+    tableRow(cultCols, ['Membros da tuna académica', cult.totalTunaAcademica || 0], true);
+    tableRow(cultCols, ['Estudantes envolvidos em eventos desportivos', cult.totalEstudantesDesporto || 0], false);
+    tableRow(cultCols, ['Estudantes envolvidos em eventos culturais', cult.totalEstudantesCultura || 0], true);
+    totalRow(cultCols, ['Total geral de estudantes envolvidos', (cult.totalEstudantesDesporto || 0) + (cult.totalEstudantesCultura || 0)]);
+
     // ==================== FINAL PAGE NUMBERING ====================
     const range = doc.bufferedPageRange();
 

@@ -59,17 +59,40 @@ router.get('/submissions', async (req, res, next) => {
 router.get('/submissions/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const [sub, idies, estudantes, docentes, investigadores, financas, labs, salas, previsao] =
+    const [sub, idies, estudantes, docentes, investigadores, invGrupoEtario, invAreaFormacao,
+      invConf, invProd, invPubsPares, invPubsDoc, invPubsTipo, invOrient, invPesq, invExt, invExtNivel,
+      financas, labs, salas, bib, comp, previsao,
+      desportoOrg, desportoPartic, culturaOrg, culturaPartic, grupos, tuna, estudantesAct] =
       await Promise.all([
         db.query('SELECT s.*,u.email,u.institution FROM submissions s JOIN users u ON u.id=s.user_id WHERE s.id=$1', [id]),
         db.query('SELECT * FROM id_ies WHERE submission_id=$1', [id]),
         db.query('SELECT * FROM estudantes WHERE submission_id=$1 ORDER BY sort_order', [id]),
         db.query('SELECT * FROM docentes WHERE submission_id=$1 ORDER BY regime,sort_order', [id]),
         db.query('SELECT * FROM investigadores WHERE submission_id=$1 ORDER BY regime,sort_order', [id]),
+        db.query('SELECT * FROM investigadores_grupo_etario WHERE submission_id=$1 ORDER BY regime,sort_order', [id]),
+        db.query('SELECT * FROM investigadores_area_formacao WHERE submission_id=$1 ORDER BY regime,sort_order', [id]),
+        db.query('SELECT * FROM investigadores_conferencias WHERE submission_id=$1 ORDER BY sort_order', [id]),
+        db.query('SELECT * FROM investigadores_producao WHERE submission_id=$1 ORDER BY sort_order', [id]),
+        db.query('SELECT * FROM investigadores_pubs_pares WHERE submission_id=$1 ORDER BY sort_order', [id]),
+        db.query('SELECT * FROM investigadores_pubs_por_docente WHERE submission_id=$1 ORDER BY sort_order', [id]),
+        db.query('SELECT * FROM investigadores_pubs_tipo WHERE submission_id=$1 ORDER BY sort_order', [id]),
+        db.query('SELECT * FROM investigadores_orientacoes WHERE submission_id=$1 ORDER BY tipo,sort_order', [id]),
+        db.query('SELECT * FROM investigadores_pesquisas WHERE submission_id=$1 ORDER BY sort_order', [id]),
+        db.query('SELECT * FROM investigadores_extensao WHERE submission_id=$1 ORDER BY sort_order', [id]),
+        db.query('SELECT * FROM investigadores_extensao_nivel WHERE submission_id=$1 ORDER BY sort_order', [id]),
         db.query('SELECT * FROM financas WHERE submission_id=$1', [id]),
         db.query('SELECT * FROM infra_labs WHERE submission_id=$1 ORDER BY sort_order', [id]),
         db.query('SELECT * FROM infra_salas WHERE submission_id=$1 ORDER BY sort_order', [id]),
+        db.query('SELECT * FROM infra_bibliotecas WHERE submission_id=$1 ORDER BY sort_order', [id]),
+        db.query('SELECT * FROM infra_computadores WHERE submission_id=$1 ORDER BY sort_order', [id]),
         db.query('SELECT * FROM previsao WHERE submission_id=$1 ORDER BY sort_order', [id]),
+        db.query('SELECT * FROM desporto_organizado WHERE submission_id=$1 ORDER BY sort_order', [id]),
+        db.query('SELECT * FROM desporto_participacao WHERE submission_id=$1 ORDER BY sort_order', [id]),
+        db.query('SELECT * FROM cultura_organizada WHERE submission_id=$1 ORDER BY sort_order', [id]),
+        db.query('SELECT * FROM cultura_participacao WHERE submission_id=$1 ORDER BY sort_order', [id]),
+        db.query('SELECT * FROM grupos_culturais WHERE submission_id=$1 ORDER BY sort_order', [id]),
+        db.query('SELECT * FROM tuna_academica WHERE submission_id=$1 ORDER BY sort_order', [id]),
+        db.query('SELECT * FROM estudantes_atividades WHERE submission_id=$1 ORDER BY sort_order', [id]),
       ]);
     if (!sub.rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({
@@ -78,9 +101,31 @@ router.get('/submissions/:id', async (req, res, next) => {
       estudantes: estudantes.rows,
       docentes: docentes.rows,
       investigadores: investigadores.rows,
+      investigadoresGrupoEtario: invGrupoEtario.rows,
+      investigadoresAreaFormacao: invAreaFormacao.rows,
+      investigadoresResultados: {
+        conferencias: invConf.rows,
+        producao: invProd.rows,
+        pubsPares: invPubsPares.rows,
+        pubsPorDocente: invPubsDoc.rows,
+        pubsTipo: invPubsTipo.rows,
+        orientacoes: invOrient.rows,
+        pesquisas: invPesq.rows,
+        extensao: invExt.rows,
+        extensaoNivel: invExtNivel.rows,
+      },
       financas: financas.rows[0] || null,
-      infra: { labs: labs.rows, salas: salas.rows },
+      infra: { labs: labs.rows, salas: salas.rows, bibliotecas: bib.rows, computadores: comp.rows },
       previsao: previsao.rows,
+      cultura: {
+        desportoOrganizado: desportoOrg.rows,
+        desportoParticipacao: desportoPartic.rows,
+        culturaOrganizada: culturaOrg.rows,
+        culturaParticipacao: culturaPartic.rows,
+        grupos: grupos.rows,
+        tuna: tuna.rows,
+        estudantesAtividades: estudantesAct.rows,
+      },
     });
   } catch (err) { next(err); }
 });

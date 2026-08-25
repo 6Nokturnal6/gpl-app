@@ -2,6 +2,7 @@ const express = require('express');
 const db = require('../models/db');
 const { authenticate, requireAdmin, requireDirector } = require('../middleware/auth');
 const audit = require('../utils/audit');
+const { computePrevisao } = require('../utils/previsaoSummary');
 
 const router = express.Router();
 router.use(authenticate);
@@ -109,7 +110,8 @@ router.get('/:id/summary', async (req, res, next) => {
       );
     }
 
-    const [campuses, students, staff, researchers, finances, labs, salas, previsao, idies] = await Promise.all([
+    const [campuses, students, staff, researchers, finances, labs, salas, previsao, idies,
+      desportoOrg, desportoPartic, culturaOrg, culturaPartic, grupos, tuna, estudantesAct] = await Promise.all([
       db.query(`
         SELECT c.id, c.nome, c.provincia, s.status, s.id as submission_id,
           (SELECT COUNT(*) FROM section_locks sl WHERE sl.submission_id=s.id) as locked_sections,
@@ -129,15 +131,15 @@ router.get('/:id/summary', async (req, res, next) => {
       ) : Promise.resolve({ rows: [] }),
 
       subIds.length ? db.query(
-        `SELECT COALESCE(SUM(d.lic_h+d.lic_m+d.mest_h+d.mest_m+d.dout_h+d.dout_m),0) AS total,
-                COALESCE(SUM(d.lic_h+d.mest_h+d.dout_h),0) AS homens,
-                COALESCE(SUM(d.lic_m+d.mest_m+d.dout_m),0) AS mulheres
+        `SELECT COALESCE(SUM(d.lic_h+d.lic_m+d.mest_h+d.mest_m+d.dout_h+d.dout_m+COALESCE(d.pos_h,0)+COALESCE(d.pos_m,0)),0) AS total,
+                COALESCE(SUM(d.lic_h+d.mest_h+d.dout_h+COALESCE(d.pos_h,0)),0) AS homens,
+                COALESCE(SUM(d.lic_m+d.mest_m+d.dout_m+COALESCE(d.pos_m,0)),0) AS mulheres
          FROM docentes d WHERE d.submission_id = ANY($1::uuid[])`,
         [subIds]
       ) : Promise.resolve({ rows: [{ total:0, homens:0, mulheres:0 }] }),
 
       subIds.length ? db.query(
-        `SELECT COALESCE(SUM(i.lic_h+i.lic_m+i.mest_h+i.mest_m+i.dout_h+i.dout_m),0) AS total
+        `SELECT COALESCE(SUM(i.lic_h+i.lic_m+i.mest_h+i.mest_m+i.dout_h+i.dout_m+COALESCE(i.pos_h,0)+COALESCE(i.pos_m,0)),0) AS total
          FROM investigadores i WHERE i.submission_id = ANY($1::uuid[])`,
         [subIds]
       ) : Promise.resolve({ rows: [{ total:0 }] }),
@@ -147,7 +149,11 @@ router.get('/:id/summary', async (req, res, next) => {
                 COALESCE(SUM(f.creditos),0) AS creditos, COALESCE(SUM(f.proprias),0) AS proprias,
                 COALESCE(SUM(f.func_ensino),0) AS func_ensino, COALESCE(SUM(f.func_investig),0) AS func_investig,
                 COALESCE(SUM(f.func_admin),0) AS func_admin, COALESCE(SUM(f.sal_docentes),0) AS sal_docentes,
-                COALESCE(SUM(f.sal_tecnicos),0) AS sal_tecnicos
+                COALESCE(SUM(f.sal_tecnicos),0) AS sal_tecnicos, COALESCE(SUM(f.sal_outros),0) AS sal_outros,
+                COALESCE(SUM(f.desp_invest),0) AS desp_invest,
+                COALESCE(SUM(COALESCE(f.desp_deprec,0)),0) AS desp_deprec,
+                COALESCE(SUM(COALESCE(f.desp_invest_outros,0)),0) AS desp_invest_outros,
+                COALESCE(SUM(COALESCE(f.desp_reembolso,0)),0) AS desp_reembolso
          FROM financas f WHERE f.submission_id = ANY($1::uuid[])`,
         [subIds]
       ) : Promise.resolve({ rows: [{}] }),
@@ -166,12 +172,31 @@ router.get('/:id/summary', async (req, res, next) => {
 
             // Aggregated previsao rows
       subIds.length ? db.query(
-        'SELECT grau, homens, mulheres FROM previsao WHERE submission_id = ANY(\$1::uuid[]) ORDER BY grau',
+        'SELECT grau, homens, mulheres FROM previsao WHERE submission_id = ANY($1::uuid[]) ORDER BY grau',
         [subIds]
       ) : Promise.resolve({ rows: [] }),
 
-      db.query('SELECT * FROM university_id_ies WHERE university_id=\$1', [uid]),
+      db.query('SELECT * FROM university_id_ies WHERE university_id=$1', [uid]),
+
+      subIds.length ? db.query('SELECT * FROM desporto_organizado WHERE submission_id = ANY($1::uuid[])', [subIds]) : Promise.resolve({ rows: [] }),
+      subIds.length ? db.query('SELECT * FROM desporto_participacao WHERE submission_id = ANY($1::uuid[])', [subIds]) : Promise.resolve({ rows: [] }),
+      subIds.length ? db.query('SELECT * FROM cultura_organizada WHERE submission_id = ANY($1::uuid[])', [subIds]) : Promise.resolve({ rows: [] }),
+      subIds.length ? db.query('SELECT * FROM cultura_participacao WHERE submission_id = ANY($1::uuid[])', [subIds]) : Promise.resolve({ rows: [] }),
+      subIds.length ? db.query('SELECT * FROM grupos_culturais WHERE submission_id = ANY($1::uuid[])', [subIds]) : Promise.resolve({ rows: [] }),
+      subIds.length ? db.query('SELECT * FROM tuna_academica WHERE submission_id = ANY($1::uuid[])', [subIds]) : Promise.resolve({ rows: [] }),
+      subIds.length ? db.query('SELECT * FROM estudantes_atividades WHERE submission_id = ANY($1::uuid[])', [subIds]) : Promise.resolve({ rows: [] }),
     ]);
+
+    const culturaData = {
+      desportoOrganizado: desportoOrg.rows,
+      desportoParticipacao: desportoPartic.rows,
+      culturaOrganizada: culturaOrg.rows,
+      culturaParticipacao: culturaPartic.rows,
+      grupos: grupos.rows,
+      tuna: tuna.rows,
+      estudantesAtividades: estudantesAct.rows,
+    };
+    const cultura = subIds.length ? computePrevisao({ cultura: culturaData }).cultura : null;
 
     res.json({
       campuses: campuses.rows,
@@ -181,6 +206,7 @@ router.get('/:id/summary', async (req, res, next) => {
       finances: finances.rows[0],
       infrastructure: { labs: labs.rows[0], salas: salas.rows[0] },
       previsao: previsao.rows,
+      cultura,
       idies: idies.rows[0] || null,
     });
   } catch (err) { next(err); }
@@ -203,13 +229,13 @@ router.post('/:id/submit', async (req, res, next) => {
       LEFT JOIN submissions s ON s.campus_id=c.id AND s.year=$2
       WHERE c.university_id=$1`, [uid, yr]);
 
-    // Sections that chefes must lock: estudantes, docentes, investigadores, financas, infra, previsao (6 — idies is director's)
-    const REQUIRED_LOCKS = 6;
+    // Sections chefes must lock: estudantes, docentes, investigadores, financas, infra, previsao, cultura (7 — idies is director's)
+    const REQUIRED_LOCKS = 7;
     const incomplete = campusCheck.rows.filter(r => !r.submission_id || parseInt(r.locked_count) < REQUIRED_LOCKS);
     if (incomplete.length > 0) {
       const names = incomplete.map(r => r.nome).join(', ');
       return res.status(400).json({
-        error: `Os seguintes campuses ainda não concluíram todas as secções: ${names}. Cada Chefe de Departamento deve marcar as 6 secções como "Concluído" antes da submissão.`,
+        error: `Os seguintes campuses ainda não concluíram todas as secções: ${names}. Cada Chefe de Departamento deve marcar as 7 secções como "Concluído" antes da submissão.`,
         incomplete: incomplete.map(r => ({ nome: r.nome, locked: r.locked_count, required: REQUIRED_LOCKS }))
       });
     }

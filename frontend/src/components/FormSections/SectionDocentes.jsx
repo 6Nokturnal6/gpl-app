@@ -13,14 +13,15 @@ function DocenteTable({ rows, regime, onSet, onAdd, onRemove }) {
             <Th center>Lic. H</Th><Th center>Lic. M</Th>
             <Th center>Mest. H</Th><Th center>Mest. M</Th>
             <Th center>Dout. H</Th><Th center>Dout. M</Th>
+            <Th center>Pós-G. H</Th><Th center>Pós-G. M</Th>
             <Th center>Tot. H</Th><Th center>Tot. M</Th>
             <Th></Th>
           </tr>
         </thead>
         <tbody>
           {rows.map((r, i) => {
-            const tH = (r.lic_h||0)+(r.mest_h||0)+(r.dout_h||0);
-            const tM = (r.lic_m||0)+(r.mest_m||0)+(r.dout_m||0);
+            const tH = (r.lic_h||0)+(r.mest_h||0)+(r.dout_h||0)+(r.pos_h||0);
+            const tM = (r.lic_m||0)+(r.mest_m||0)+(r.dout_m||0)+(r.pos_m||0);
             const inp = (k) => <input type="number" min="0" value={r[k]??''} onChange={e=>onSet(i,k,parseInt(e.target.value)||0)} style={{border:'none',background:'transparent',width:44,fontSize:12,textAlign:'center'}} />;
             return (
               <tr key={i} style={{ background: i%2===0?'transparent':'var(--color-background-secondary)' }}>
@@ -33,6 +34,8 @@ function DocenteTable({ rows, regime, onSet, onAdd, onRemove }) {
                 <td style={{border:'0.5px solid var(--color-border-tertiary)',textAlign:'center'}}>{inp('mest_m')}</td>
                 <td style={{border:'0.5px solid var(--color-border-tertiary)',textAlign:'center'}}>{inp('dout_h')}</td>
                 <td style={{border:'0.5px solid var(--color-border-tertiary)',textAlign:'center'}}>{inp('dout_m')}</td>
+                <td style={{border:'0.5px solid var(--color-border-tertiary)',textAlign:'center'}}>{inp('pos_h')}</td>
+                <td style={{border:'0.5px solid var(--color-border-tertiary)',textAlign:'center'}}>{inp('pos_m')}</td>
                 <Td total>{tH}</Td><Td total>{tM}</Td>
                 <td style={{border:'0.5px solid var(--color-border-tertiary)',textAlign:'center'}}><button onClick={()=>onRemove(i)} style={{fontSize:11,color:'var(--color-text-danger)',background:'none',border:'none',cursor:'pointer'}}>✕</button></td>
               </tr>

@@ -484,7 +484,7 @@ function buildPdfBuffer(data) {
 
     // Desporto e Cultura
     const cultData = data.cultura || {};
-    const partTotal = (r) => (parseInt(r.estudantes_h) || 0) + (parseInt(r.estudantes_m) || 0) + (parseInt(r.docentes_h) || 0) + (parseInt(r.docentes_m) || 0);
+    const partTotal = (r) => (parseInt(r.estudantes_h) || 0) + (parseInt(r.estudantes_m) || 0);
     const cultCols = [{ label: 'Descrição', w: 200 }, { label: 'Detalhe', w: 120 }, { label: 'Est. H', w: 40, align: 'center' }, { label: 'Est. M', w: 40, align: 'center' }, { label: 'Total', w: 50, align: 'center', total: true }];
 
     startNewSection('E. Desporto e Cultura — ' + YEAR);

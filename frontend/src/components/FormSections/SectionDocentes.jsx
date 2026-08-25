@@ -107,6 +107,7 @@ export default function SectionDocentes({ data, update }) {
     <CtaTable rows={cta.nivelFormacao || []} labelKey="regime" labelHeader="B1 – Regime / nível de formação" {...ctaEdit('nivelFormacao','regime')} />
     <CtaTable rows={cta.nacionalidade || []} labelKey="nacionalidade" labelHeader="B2 – Nacionalidade" {...ctaEdit('nacionalidade','nacionalidade')} />
     <CtaTable rows={cta.relacao || []} labelKey="relacao" labelHeader="B3 – Relação contratual" {...ctaEdit('relacao','relacao')} />
+    <SectionTitle>B4 – CTA por grupo etário</SectionTitle>
     <AgeTable rows={cta.grupoEtario || []} {...ctaEdit('grupoEtario','classe_idade')} />
   </Card>;
 }

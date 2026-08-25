@@ -494,7 +494,7 @@ async function buildExcel(data) {
   wsCult.mergeCells('A1:J1');
   wsCult.addRow([]);
 
-  const partTotal = (r) => (r.estudantes_h||0)+(r.estudantes_m||0);
+  const partTotal = (r) => (r.estudantes_h||0)+(r.estudantes_m||0)+(r.docentes_h||0)+(r.docentes_m||0);
 
   cultSection('1. Eventos desportivos organizados',
     ['Nome atividade','Modalidade','Data e local','Objetivos','Est. H','Est. M','Doc. H','Doc. M','Total'],

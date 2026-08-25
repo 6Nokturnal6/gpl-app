@@ -484,30 +484,30 @@ function buildPdfBuffer(data) {
 
     // Desporto e Cultura
     const cultData = data.cultura || {};
-    const partTotal = (r) => (parseInt(r.estudantes_h) || 0) + (parseInt(r.estudantes_m) || 0);
-    const cultCols = [{ label: 'Descrição', w: 200 }, { label: 'Detalhe', w: 120 }, { label: 'Est. H', w: 40, align: 'center' }, { label: 'Est. M', w: 40, align: 'center' }, { label: 'Total', w: 50, align: 'center', total: true }];
+    const partTotal = (r) => (parseInt(r.estudantes_h) || 0) + (parseInt(r.estudantes_m) || 0) + (parseInt(r.docentes_h) || 0) + (parseInt(r.docentes_m) || 0);
+    const cultCols = [{ label: 'Descrição', w: 170 }, { label: 'Detalhe', w: 100 }, { label: 'Est. H', w: 35, align: 'center' }, { label: 'Est. M', w: 35, align: 'center' }, { label: 'Doc. H', w: 35, align: 'center' }, { label: 'Doc. M', w: 35, align: 'center' }, { label: 'Total', w: 45, align: 'center', total: true }];
 
     startNewSection('E. Desporto e Cultura — ' + YEAR);
 
     subTitle('1. Eventos desportivos organizados');
     tableHeader(cultCols);
-    (cultData.desportoOrganizado || []).forEach((r, i) => tableRow(cultCols, [r.nome_atividade, r.modalidade, r.estudantes_h || 0, r.estudantes_m || 0, partTotal(r)], i % 2 === 1));
+    (cultData.desportoOrganizado || []).forEach((r, i) => tableRow(cultCols, [r.nome_atividade, r.modalidade, r.estudantes_h || 0, r.estudantes_m || 0, r.docentes_h || 0, r.docentes_m || 0, partTotal(r)], i % 2 === 1));
 
     subTitle('2. Participação em eventos desportivos');
     tableHeader(cultCols);
-    (cultData.desportoParticipacao || []).forEach((r, i) => tableRow(cultCols, [r.nome_atividade, r.entidade_org, r.estudantes_h || 0, r.estudantes_m || 0, partTotal(r)], i % 2 === 1));
+    (cultData.desportoParticipacao || []).forEach((r, i) => tableRow(cultCols, [r.nome_atividade, r.entidade_org, r.estudantes_h || 0, r.estudantes_m || 0, r.docentes_h || 0, r.docentes_m || 0, partTotal(r)], i % 2 === 1));
 
     subTitle('3. Atividades culturais organizadas');
     tableHeader(cultCols);
-    (cultData.culturaOrganizada || []).forEach((r, i) => tableRow(cultCols, [r.nome_atividade, r.tipo_atividade, r.estudantes_h || 0, r.estudantes_m || 0, partTotal(r)], i % 2 === 1));
+    (cultData.culturaOrganizada || []).forEach((r, i) => tableRow(cultCols, [r.nome_atividade, r.tipo_atividade, r.estudantes_h || 0, r.estudantes_m || 0, r.docentes_h || 0, r.docentes_m || 0, partTotal(r)], i % 2 === 1));
 
     subTitle('4. Participação em atividades culturais');
     tableHeader(cultCols);
-    (cultData.culturaParticipacao || []).forEach((r, i) => tableRow(cultCols, [r.nome_evento, r.entidade_org, r.estudantes_h || 0, r.estudantes_m || 0, partTotal(r)], i % 2 === 1));
+    (cultData.culturaParticipacao || []).forEach((r, i) => tableRow(cultCols, [r.nome_evento, r.entidade_org, r.estudantes_h || 0, r.estudantes_m || 0, r.docentes_h || 0, r.docentes_m || 0, partTotal(r)], i % 2 === 1));
 
     subTitle('5. Grupos culturais');
     tableHeader(cultCols);
-    (cultData.grupos || []).forEach((r, i) => tableRow(cultCols, [r.nome_grupo, r.expressao_artistica, r.estudantes_h || 0, r.estudantes_m || 0, partTotal(r)], i % 2 === 1));
+    (cultData.grupos || []).forEach((r, i) => tableRow(cultCols, [r.nome_grupo, r.expressao_artistica, r.estudantes_h || 0, r.estudantes_m || 0, r.docentes_h || 0, r.docentes_m || 0, partTotal(r)], i % 2 === 1));
 
     subTitle('6. Tuna académica');
     const tunaCols = [{ label: 'Nome membro', w: 160 }, { label: 'Cargo', w: 120 }, { label: 'Ano ingresso', w: 80, align: 'center' }, { label: 'Distinções', w: 160 }];

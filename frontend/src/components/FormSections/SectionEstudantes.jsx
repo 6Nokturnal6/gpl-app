@@ -1,5 +1,5 @@
 import { Card, TableWrap, Th, Td, AddRowBtn, ErrorBanner } from '../Layout/FormComponents';
-import { emptyEstudante, emptyEstudanteVaga } from '../../hooks/useSubmission';
+import { emptyEstudante, emptyEstudanteVaga, emptyEstudanteCursoEstatistica, emptyEstudanteNacionalidade, emptyEstudanteEstrangeiro, emptyEstudanteNecessidade } from '../../hooks/useSubmission';
 import { useState } from 'react';
 import { NEXT_YEAR, CURRENT_YEAR } from '../../utils/appConfig';
 import { validateEstudantes } from '../../utils/validation';
@@ -7,10 +7,21 @@ import { validateEstudantes } from '../../utils/validation';
 const GRAUS = ['Licenciatura','Mestrado','Doutoramento','Pós-Graduação','Diploma de Especialização'];
 const REGIMES = ['Presencial','Distância','Misto'];
 const NACIONALIDADES = ['Moçambicana','Estrangeira'];
+const STATS_FIELDS = [['ingresso_h','Ingresso H'],['ingresso_m','Ingresso M'],['matriculado_h','Matric. H'],['matriculado_m','Matric. M'],['graduado_h','Graduado H'],['graduado_m','Graduado M']];
+const NEED_FIELDS = [['cadeirante_h','Cadeirante H'],['cadeirante_m','Cadeirante M'],['visual_h','Visual H'],['visual_m','Visual M'],['auditiva_h','Auditiva H'],['auditiva_m','Auditiva M'],['outros_h','Outros H'],['outros_m','Outros M']];
+
+function StatsTable({ rows, fields, textFields, onSet, onAdd }) {
+  return <><TableWrap><thead><tr>{textFields.map(([key, label]) => <Th key={key}>{label}</Th>)}{fields.map(([key, label]) => <Th key={key} center>{label}</Th>)}</tr></thead>
+    <tbody>{rows.map((r, i) => <tr key={i}>{textFields.map(([key]) => <td key={key} style={{padding:'3px 6px'}}><input value={r[key] || ''} onChange={e => onSet(i,key,e.target.value)} /></td>)}{fields.map(([key]) => <td key={key} style={{padding:'3px 6px',textAlign:'center'}}><input type="number" min="0" value={r[key] ?? 0} onChange={e => onSet(i,key,parseInt(e.target.value) || 0)} /></td>)}</tr>)}</tbody>
+  </TableWrap><AddRowBtn onClick={onAdd} /></>;
+}
 
 export default function SectionEstudantes({ data, update }) {
   const rows = data.estudantes || [];
   const vagaRows = data.estudantesVagas || [emptyEstudanteVaga()];
+  const extras = data.estudantesResultados || {};
+  const setExtra = (key, rows) => update('estudantesResultados', { ...extras, [key]: rows });
+  const editExtra = (key, empty) => ({ onSet: (i, field, value) => setExtra(key, (extras[key] || []).map((r, idx) => idx === i ? { ...r, [field]: value } : r)), onAdd: () => setExtra(key, [...(extras[key] || []), empty()]) });
   const [errors, setErrors] = useState({});
 
   const set = (i, k, v) => {
@@ -139,6 +150,14 @@ export default function SectionEstudantes({ data, update }) {
         <tfoot><tr><td colSpan={6}>Total</td><Td total>{totalPreenchidas}</Td><Td total>{totalNaoPreenchidas}</Td><Td total>{totalPreenchidas + totalNaoPreenchidas}</Td></tr></tfoot>
       </TableWrap>
       <AddRowBtn onClick={() => update('estudantesVagas', [...vagaRows, emptyEstudanteVaga()])} label="+ Adicionar curso ao Quadro 1.2" />
+      <h3 style={{ marginTop: 24 }}>Quadro 1.3 – Novos ingressos, matriculados e graduados</h3>
+      <StatsTable rows={extras.cursoEstatistica || [emptyEstudanteCursoEstatistica()]} fields={STATS_FIELDS} textFields={[['curso','Curso'],['area','Área'],['subarea','Sub-área'],['regime','Regime'],['provincia','Província'],['distrito','Distrito'],['grau','Grau']]} {...editExtra('cursoEstatistica', emptyEstudanteCursoEstatistica)} />
+      <h3 style={{ marginTop: 24 }}>Quadro 1.4 – Novos ingressos, matriculados e graduados por nacionalidade</h3>
+      <StatsTable rows={extras.nacionalidadeEstatistica || [emptyEstudanteNacionalidade()]} fields={STATS_FIELDS} textFields={[['nacionalidade','Nacionalidade']]} {...editExtra('nacionalidadeEstatistica', emptyEstudanteNacionalidade)} />
+      <h3 style={{ marginTop: 24 }}>Quadro 1.5 – Estudantes estrangeiros por curso</h3>
+      <StatsTable rows={extras.estrangeiros || [emptyEstudanteEstrangeiro()]} fields={STATS_FIELDS} textFields={[['curso','Curso'],['area','Área'],['subarea','Sub-área'],['regime','Regime'],['pais','País'],['grau','Grau']]} {...editExtra('estrangeiros', emptyEstudanteEstrangeiro)} />
+      <h3 style={{ marginTop: 24 }}>Quadro 1.6 – Estudantes com necessidades especiais</h3>
+      <StatsTable rows={extras.necessidadesEspeciais || [emptyEstudanteNecessidade()]} fields={NEED_FIELDS} textFields={[['curso','Curso'],['area','Área'],['subarea','Sub-área'],['regime','Regime'],['provincia','Província'],['distrito','Distrito'],['grau','Grau']]} {...editExtra('necessidadesEspeciais', emptyEstudanteNecessidade)} />
     </Card>
   );
 }

@@ -207,6 +207,21 @@ function buildPdfBuffer(data) {
       tableRow(vagaCols, [r.curso, r.duracao, r.area, r.subarea, r.regime, r.nacionalidade, r.provincia, r.distrito, r.grau, f, o, f + o], i % 2 === 1);
     });
     totalRow(vagaCols, ['TOTAL', '', '', '', '', '', '', '', '', filled, open, filled + open]);
+    const studentResults = data.estudantesResultados || {};
+    const statKeys = [['ingresso_h','Ing.H'],['ingresso_m','Ing.M'],['matriculado_h','Mat.H'],['matriculado_m','Mat.M'],['graduado_h','Grad.H'],['graduado_m','Grad.M']];
+    const addStudentTable = (title, columns, rows, fields) => {
+      subTitle(title);
+      const cols = [...columns.map(([, label, w]) => ({ label, w })), ...fields.map(([, label]) => ({ label, w: 38, align: 'center' }))];
+      tableHeader(cols);
+      (rows || []).forEach((r, i) => tableRow(cols, [...columns.map(([key]) => r[key] || ''), ...fields.map(([key]) => r[key] || 0)], i % 2 === 1));
+    };
+    addStudentTable('Quadro 1.3 — Novos ingressos, matriculados e graduados', [['curso','Curso',65],['area','Área',38],['subarea','Sub-área',38],['regime','Regime',38],['provincia','Prov.',36],['distrito','Dist.',36],['grau','Grau',45]], studentResults.cursoEstatistica, statKeys);
+    addStudentTable('Quadro 1.4 — Novos ingressos, matriculados e graduados por nacionalidade', [['nacionalidade','Nacionalidade',100]], studentResults.nacionalidadeEstatistica, statKeys);
+    addStudentTable('Quadro 1.5 — Estudantes estrangeiros por curso, país e grau', [['curso','Curso',62],['area','Área',36],['subarea','Sub-área',36],['regime','Regime',38],['pais','País',48],['grau','Grau',45]], studentResults.estrangeiros, statKeys);
+    addStudentTable('Quadro 1.6 — Estudantes com necessidades especiais', [['curso','Curso',58],['area','Área',32],['subarea','Sub-área',32],['regime','Regime',36],['provincia','Prov.',34],['distrito','Dist.',34],['grau','Grau',42]], studentResults.necessidadesEspeciais, [
+      ['cadeirante_h','Cad.H'],['cadeirante_m','Cad.M'],['visual_h','Vis.H'],['visual_m','Vis.M'],
+      ['auditiva_h','Aud.H'],['auditiva_m','Aud.M'],['outros_h','Out.H'],['outros_m','Out.M'],
+    ]);
 
     // Docentes
     startNewSection('A. Corpo Docente — ' + YEAR);

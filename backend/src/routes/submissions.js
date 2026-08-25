@@ -47,10 +47,14 @@ router.get('/current', async (req, res, next) => {
       univIdIes = r.rows[0] || null;
     }
 
-    const [estudantes, estudantesVagas, docentes, docentesGrupoEtario, docentesGrupoEtarioGrau, docentesAreaFormacao, docentesCursoFormacao, docentesCategoria, docentesRelacao, ctaNivelFormacao, ctaNacionalidade, ctaRelacao, ctaGrupoEtario, investigadores, financas, labs, salas, bib, comp, previsao, desportoOrg, desportoPartic, culturaOrg, culturaPartic, grupos, tuna, estudantesAct, invGrupoEtario, invAreaFormacao, invConf, invProd, invPubsPares, invPubsDoc, invPubsTipo, invOrient, invPesq, invExt, invExtNivel, locks] =
+    const [estudantes, estudantesVagas, estudantesCursoEstatistica, estudantesNacionalidadeEstatistica, estudantesEstrangeiros, estudantesNecessidades, docentes, docentesGrupoEtario, docentesGrupoEtarioGrau, docentesAreaFormacao, docentesCursoFormacao, docentesCategoria, docentesRelacao, ctaNivelFormacao, ctaNacionalidade, ctaRelacao, ctaGrupoEtario, investigadores, financas, labs, salas, bib, comp, previsao, desportoOrg, desportoPartic, culturaOrg, culturaPartic, grupos, tuna, estudantesAct, invGrupoEtario, invAreaFormacao, invConf, invProd, invPubsPares, invPubsDoc, invPubsTipo, invOrient, invPesq, invExt, invExtNivel, locks] =
       await Promise.all([
         db.query('SELECT * FROM estudantes WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
         db.query('SELECT * FROM estudantes_vagas WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM estudantes_curso_estatistica WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM estudantes_nacionalidade_estatistica WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM estudantes_estrangeiros WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM estudantes_necessidades_especiais WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
         db.query('SELECT * FROM docentes WHERE submission_id=$1 ORDER BY regime,sort_order', [sub.id]),
         db.query('SELECT * FROM docentes_grupo_etario WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
         db.query('SELECT * FROM docentes_grupo_etario_grau WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
@@ -95,6 +99,12 @@ router.get('/current', async (req, res, next) => {
       idies: univIdIes,          // university-level, read-only for chefes
       estudantes: estudantes.rows,
       estudantesVagas: estudantesVagas.rows,
+      estudantesResultados: {
+        cursoEstatistica: estudantesCursoEstatistica.rows,
+        nacionalidadeEstatistica: estudantesNacionalidadeEstatistica.rows,
+        estrangeiros: estudantesEstrangeiros.rows,
+        necessidadesEspeciais: estudantesNecessidades.rows,
+      },
       docentes: docentes.rows,
       docentesResultados: {
         grupoEtario: docentesGrupoEtario.rows,
@@ -199,11 +209,26 @@ router.put('/estudantes/resultados', async (req, res, next) => {
   try {
     const sub = await getOrCreateSubmission(req.user.id, req.user.campus_id, req.user.university_id);
     await checkNotLocked(sub.id, 'estudantes', req.user.role);
-    const rows = Array.isArray(req.body) ? req.body : [];
-    await saveRows(sub.id, 'estudantes_vagas',
+    const d = req.body || {};
+    if (Array.isArray(d.vagas)) await saveRows(sub.id, 'estudantes_vagas',
       'submission_id,curso,duracao,area,subarea,regime,nacionalidade,provincia,distrito,grau,vagas_preenchidas,vagas_nao_preenchidas,sort_order',
-      rows, (r, i) => [sub.id, r.curso, r.duracao || null, r.area, r.subarea, r.regime, r.nacionalidade || null,
+      d.vagas || [], (r, i) => [sub.id, r.curso, r.duracao || null, r.area, r.subarea, r.regime, r.nacionalidade || null,
         r.provincia, r.distrito || null, r.grau, r.vagas_preenchidas || 0, r.vagas_nao_preenchidas || 0, i]);
+    if (Array.isArray(d.cursoEstatistica)) await saveRows(sub.id, 'estudantes_curso_estatistica',
+      'submission_id,curso,duracao,area,subarea,regime,provincia,distrito,grau,ingresso_h,ingresso_m,matriculado_h,matriculado_m,graduado_h,graduado_m,sort_order',
+      d.cursoEstatistica || [], (r, i) => [sub.id, r.curso, r.duracao || null, r.area, r.subarea, r.regime, r.provincia, r.distrito || null, r.grau,
+        r.ingresso_h || 0, r.ingresso_m || 0, r.matriculado_h || 0, r.matriculado_m || 0, r.graduado_h || 0, r.graduado_m || 0, i]);
+    if (Array.isArray(d.nacionalidadeEstatistica)) await saveRows(sub.id, 'estudantes_nacionalidade_estatistica',
+      'submission_id,nacionalidade,ingresso_h,ingresso_m,matriculado_h,matriculado_m,graduado_h,graduado_m,sort_order',
+      d.nacionalidadeEstatistica || [], (r, i) => [sub.id, r.nacionalidade || '', r.ingresso_h || 0, r.ingresso_m || 0, r.matriculado_h || 0, r.matriculado_m || 0, r.graduado_h || 0, r.graduado_m || 0, i]);
+    if (Array.isArray(d.estrangeiros)) await saveRows(sub.id, 'estudantes_estrangeiros',
+      'submission_id,curso,area,subarea,regime,pais,grau,ingresso_h,ingresso_m,matriculado_h,matriculado_m,graduado_h,graduado_m,sort_order',
+      d.estrangeiros || [], (r, i) => [sub.id, r.curso, r.area, r.subarea, r.regime, r.pais, r.grau,
+        r.ingresso_h || 0, r.ingresso_m || 0, r.matriculado_h || 0, r.matriculado_m || 0, r.graduado_h || 0, r.graduado_m || 0, i]);
+    if (Array.isArray(d.necessidadesEspeciais)) await saveRows(sub.id, 'estudantes_necessidades_especiais',
+      'submission_id,curso,area,subarea,regime,provincia,distrito,grau,cadeirante_h,cadeirante_m,visual_h,visual_m,auditiva_h,auditiva_m,outros_h,outros_m,sort_order',
+      d.necessidadesEspeciais || [], (r, i) => [sub.id, r.curso, r.area, r.subarea, r.regime, r.provincia, r.distrito, r.grau,
+        r.cadeirante_h || 0, r.cadeirante_m || 0, r.visual_h || 0, r.visual_m || 0, r.auditiva_h || 0, r.auditiva_m || 0, r.outros_h || 0, r.outros_m || 0, i]);
     res.json({ ok: true });
   } catch (err) { next(err); }
 });

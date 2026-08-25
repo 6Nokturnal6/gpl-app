@@ -103,6 +103,28 @@ async function buildExcel(data) {
   });
   const vagasTotal = wsEst.addRow(['TOTAL','','','','','','','', '', vagasFilled, vagasOpen, vagasFilled + vagasOpen]);
   vagasTotal.eachCell(c => { c.style = headerStyle(LIGHT_GREEN.replace('#','')); c.font = { bold: true, size: 10, color: { argb: 'FF' + GREEN } }; });
+  const studentResults = data.estudantesResultados || {};
+  const statFields = [
+    ['ingresso_h','Ingresso H'],['ingresso_m','Ingresso M'],['matriculado_h','Matric. H'],
+    ['matriculado_m','Matric. M'],['graduado_h','Graduado H'],['graduado_m','Graduado M'],
+  ];
+  const addStudentTable = (title, columns, rows, fields) => {
+    wsEst.addRow([]);
+    wsEst.addRow([title]).getCell(1).style = { font: { bold: true, size: 10 } };
+    const h = wsEst.addRow([...columns.map(([, label]) => label), ...fields.map(([, label]) => label)]);
+    h.eachCell(c => { c.style = headerStyle(); });
+    (rows || []).forEach(r => {
+      const row = wsEst.addRow([...columns.map(([key]) => r[key] || ''), ...fields.map(([key]) => r[key] || 0)]);
+      row.eachCell(c => { c.style = cellStyle(); });
+    });
+  };
+  addStudentTable('Quadro 1.3 — Novos ingressos, matriculados e graduados', [['curso','Curso'],['area','Área'],['subarea','Sub-área'],['regime','Regime'],['provincia','Província'],['distrito','Distrito'],['grau','Grau']], studentResults.cursoEstatistica, statFields);
+  addStudentTable('Quadro 1.4 — Novos ingressos, matriculados e graduados por nacionalidade', [['nacionalidade','Nacionalidade']], studentResults.nacionalidadeEstatistica, statFields);
+  addStudentTable('Quadro 1.5 — Estudantes estrangeiros por curso, país e grau', [['curso','Curso'],['area','Área'],['subarea','Sub-área'],['regime','Regime'],['pais','País'],['grau','Grau']], studentResults.estrangeiros, statFields);
+  addStudentTable('Quadro 1.6 — Estudantes com necessidades especiais', [['curso','Curso'],['area','Área'],['subarea','Sub-área'],['regime','Regime'],['provincia','Província'],['distrito','Distrito'],['grau','Grau']], studentResults.necessidadesEspeciais, [
+    ['cadeirante_h','Cadeirante H'],['cadeirante_m','Cadeirante M'],['visual_h','Visual H'],['visual_m','Visual M'],
+    ['auditiva_h','Auditiva H'],['auditiva_m','Auditiva M'],['outros_h','Outros H'],['outros_m','Outros M'],
+  ]);
 
   // ── Sheet 3: Docentes ──────────────────────────────────────────────────────
   const wsDoc = wb.addWorksheet('Docentes');

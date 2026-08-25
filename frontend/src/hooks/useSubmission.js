@@ -46,6 +46,7 @@ export function useSubmission() {
         setData({
           idies: r.data.idies || {},          // university-level ID IES
           estudantes: r.data.estudantes?.length ? r.data.estudantes : [emptyEstudante()],
+          estudantesVagas: r.data.estudantesVagas?.length ? r.data.estudantesVagas : [emptyEstudanteVaga()],
           docentes: r.data.docentes?.length ? r.data.docentes : [emptyDocente('tempo_inteiro')],
           docentesResultados: { ...emptyDocentesResultados(), ...(r.data.docentesResultados || {}), cta: { ...emptyCta(), ...(r.data.cta || {}) } },
           investigadores: r.data.investigadores?.length ? r.data.investigadores : [emptyInvestigador('tempo_inteiro')],
@@ -79,6 +80,7 @@ export function useSubmission() {
   const savers = {
     idies: submissionApi.saveIdIes,
     estudantes: submissionApi.saveEstudantes,
+    estudantesVagas: submissionApi.saveEstudantesVagas,
     docentes: submissionApi.saveDocentes,
     docentesResultados: submissionApi.saveDocentesResultados,
     investigadores: submissionApi.saveInvestigadores,
@@ -173,6 +175,7 @@ export function useSubmission() {
 }
 
 export const emptyEstudante = () => ({ curso:'',duracao:'',area:'',subarea:'',regime:'Presencial',nacionalidade:'Moçambicana',provincia:'',distrito:'',grau:'Licenciatura',homens:0,mulheres:0 });
+export const emptyEstudanteVaga = () => ({ curso:'', duracao:'', area:'', subarea:'', regime:'Presencial', nacionalidade:'Moçambicana', provincia:'', distrito:'', grau:'Licenciatura', vagas_preenchidas:0, vagas_nao_preenchidas:0 });
 export const emptyDocente = (regime) => ({ regime,provincia:'',distrito:'',nacionalidade:'Moçambicana',lic_h:0,lic_m:0,mest_h:0,mest_m:0,dout_h:0,dout_m:0,pos_h:0,pos_m:0 });
 export const emptyDegreeRow = (label) => ({ [label]:'', lic_h:0, lic_m:0, mest_h:0, mest_m:0, dout_h:0, dout_m:0, pos_h:0, pos_m:0 });
 export const emptyAgeDocente = () => ({ classe_idade:'', moz_ti_h:0, moz_ti_m:0, moz_tp_h:0, moz_tp_m:0, estr_ti_h:0, estr_ti_m:0, estr_tp_h:0, estr_tp_m:0 });

@@ -32,7 +32,7 @@ async function resolveUnivId(sub) {
 
 // Fetch all data for a single submission, including campus name
 async function fetchBySubmissionId(subId) {
-  const [subRes, estudantes, docentes, docentesGrupoEtario, docentesGrupoEtarioGrau, docentesAreaFormacao, docentesCursoFormacao, docentesCategoria, docentesRelacao, ctaNivelFormacao, ctaNacionalidade, ctaRelacao, ctaGrupoEtario, investigadores, financas, labs, salas, bib, comp, previsao,
+  const [subRes, estudantes, estudantesVagas, docentes, docentesGrupoEtario, docentesGrupoEtarioGrau, docentesAreaFormacao, docentesCursoFormacao, docentesCategoria, docentesRelacao, ctaNivelFormacao, ctaNacionalidade, ctaRelacao, ctaGrupoEtario, investigadores, financas, labs, salas, bib, comp, previsao,
     desportoOrg, desportoPartic, culturaOrg, culturaPartic, grupos, tuna, estudantesAct,
     invGrupoEtario, invAreaFormacao, invConf, invProd, invPubsPares, invPubsDoc, invPubsTipo,
     invOrient, invPesq, invExt, invExtNivel] =
@@ -42,6 +42,7 @@ async function fetchBySubmissionId(subId) {
                 LEFT JOIN campuses c ON c.id = s.campus_id
                 WHERE s.id=$1`, [subId]),
       db.query('SELECT * FROM estudantes WHERE submission_id=$1 ORDER BY sort_order', [subId]),
+      db.query('SELECT * FROM estudantes_vagas WHERE submission_id=$1 ORDER BY sort_order', [subId]),
       db.query('SELECT * FROM docentes WHERE submission_id=$1 ORDER BY regime,sort_order', [subId]),
       db.query('SELECT * FROM docentes_grupo_etario WHERE submission_id=$1 ORDER BY sort_order', [subId]),
       db.query('SELECT * FROM docentes_grupo_etario_grau WHERE submission_id=$1 ORDER BY sort_order', [subId]),
@@ -90,6 +91,7 @@ async function fetchBySubmissionId(subId) {
     idies,
     campusNome: sub.campus_nome || null,   // passed to PDF cover page
     estudantes: estudantes.rows,
+    estudantesVagas: estudantesVagas.rows,
     docentes: docentes.rows,
     docentesResultados: {
       grupoEtario: docentesGrupoEtario.rows,
@@ -189,11 +191,12 @@ async function fetchUniversityData(universityId) {
     };
   }
 
-  const [estudantes, docentes, docentesGrupoEtario, docentesGrupoEtarioGrau, docentesAreaFormacao, docentesCursoFormacao, docentesCategoria, docentesRelacao, ctaNivelFormacao, ctaNacionalidade, ctaRelacao, ctaGrupoEtario, investigadores, financas, labs, salas, bib, comp, previsao,
+  const [estudantes, estudantesVagas, docentes, docentesGrupoEtario, docentesGrupoEtarioGrau, docentesAreaFormacao, docentesCursoFormacao, docentesCategoria, docentesRelacao, ctaNivelFormacao, ctaNacionalidade, ctaRelacao, ctaGrupoEtario, investigadores, financas, labs, salas, bib, comp, previsao,
     desportoOrg, desportoPartic, culturaOrg, culturaPartic, grupos, tuna, estudantesAct,
     invGrupoEtario, invAreaFormacao, invConf, invProd, invPubsPares, invPubsDoc, invPubsTipo,
     invOrient, invPesq, invExt, invExtNivel] = await Promise.all([
     db.query('SELECT * FROM estudantes WHERE submission_id = ANY($1::uuid[]) ORDER BY sort_order', [subIds]),
+    db.query('SELECT * FROM estudantes_vagas WHERE submission_id = ANY($1::uuid[]) ORDER BY sort_order', [subIds]),
     db.query('SELECT * FROM docentes WHERE submission_id = ANY($1::uuid[]) ORDER BY regime,sort_order', [subIds]),
     db.query('SELECT * FROM docentes_grupo_etario WHERE submission_id = ANY($1::uuid[]) ORDER BY sort_order', [subIds]),
     db.query('SELECT * FROM docentes_grupo_etario_grau WHERE submission_id = ANY($1::uuid[]) ORDER BY sort_order', [subIds]),
@@ -253,6 +256,7 @@ async function fetchUniversityData(universityId) {
   return consolidateInvestigadoresExtras({
     idies,
     estudantes: estudantes.rows,
+    estudantesVagas: estudantesVagas.rows,
     docentes: docentes.rows,
     docentesResultados: {
       grupoEtario: docentesGrupoEtario.rows,

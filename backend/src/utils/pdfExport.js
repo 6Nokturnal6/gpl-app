@@ -197,6 +197,16 @@ function buildPdfBuffer(data) {
     let tH = 0, tM = 0;
     (data.estudantes || []).forEach((r, i) => { const h = parseInt(r.homens) || 0, m = parseInt(r.mulheres) || 0; tH += h; tM += m; tableRow(estCols, [r.curso, r.duracao, r.area, r.regime, r.grau, h, m, h + m], i % 2 === 1); });
     totalRow(estCols, ['TOTAL', '', '', '', '', tH, tM, tH + tM]);
+    subTitle('Quadro 1.2 — Número de vagas preenchidas');
+    const vagaCols = [{ label: 'Curso', w: 92 }, { label: 'Dur.', w: 22, align: 'center' }, { label: 'Área', w: 48 }, { label: 'Sub-área', w: 48 }, { label: 'Regime', w: 43 }, { label: 'Nac.', w: 42 }, { label: 'Prov.', w: 42 }, { label: 'Dist.', w: 42 }, { label: 'Grau', w: 55 }, { label: 'Preench.', w: 42, align: 'center' }, { label: 'Não preench.', w: 48, align: 'center' }, { label: 'Total', w: 38, align: 'center', total: true }];
+    tableHeader(vagaCols);
+    let filled = 0, open = 0;
+    (data.estudantesVagas || []).forEach((r, i) => {
+      const f = parseInt(r.vagas_preenchidas) || 0, o = parseInt(r.vagas_nao_preenchidas) || 0;
+      filled += f; open += o;
+      tableRow(vagaCols, [r.curso, r.duracao, r.area, r.subarea, r.regime, r.nacionalidade, r.provincia, r.distrito, r.grau, f, o, f + o], i % 2 === 1);
+    });
+    totalRow(vagaCols, ['TOTAL', '', '', '', '', '', '', '', '', filled, open, filled + open]);
 
     // Docentes
     startNewSection('A. Corpo Docente — ' + YEAR);

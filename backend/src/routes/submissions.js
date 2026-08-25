@@ -47,9 +47,10 @@ router.get('/current', async (req, res, next) => {
       univIdIes = r.rows[0] || null;
     }
 
-    const [estudantes, docentes, docentesGrupoEtario, docentesGrupoEtarioGrau, docentesAreaFormacao, docentesCursoFormacao, docentesCategoria, docentesRelacao, ctaNivelFormacao, ctaNacionalidade, ctaRelacao, ctaGrupoEtario, investigadores, financas, labs, salas, bib, comp, previsao, desportoOrg, desportoPartic, culturaOrg, culturaPartic, grupos, tuna, estudantesAct, invGrupoEtario, invAreaFormacao, invConf, invProd, invPubsPares, invPubsDoc, invPubsTipo, invOrient, invPesq, invExt, invExtNivel, locks] =
+    const [estudantes, estudantesVagas, docentes, docentesGrupoEtario, docentesGrupoEtarioGrau, docentesAreaFormacao, docentesCursoFormacao, docentesCategoria, docentesRelacao, ctaNivelFormacao, ctaNacionalidade, ctaRelacao, ctaGrupoEtario, investigadores, financas, labs, salas, bib, comp, previsao, desportoOrg, desportoPartic, culturaOrg, culturaPartic, grupos, tuna, estudantesAct, invGrupoEtario, invAreaFormacao, invConf, invProd, invPubsPares, invPubsDoc, invPubsTipo, invOrient, invPesq, invExt, invExtNivel, locks] =
       await Promise.all([
         db.query('SELECT * FROM estudantes WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM estudantes_vagas WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
         db.query('SELECT * FROM docentes WHERE submission_id=$1 ORDER BY regime,sort_order', [sub.id]),
         db.query('SELECT * FROM docentes_grupo_etario WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
         db.query('SELECT * FROM docentes_grupo_etario_grau WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
@@ -93,6 +94,7 @@ router.get('/current', async (req, res, next) => {
       submission: sub,
       idies: univIdIes,          // university-level, read-only for chefes
       estudantes: estudantes.rows,
+      estudantesVagas: estudantesVagas.rows,
       docentes: docentes.rows,
       docentesResultados: {
         grupoEtario: docentesGrupoEtario.rows,
@@ -190,6 +192,19 @@ router.put('/estudantes', async (req, res, next) => {
       action:'save_section', entityType:'submission', entityId:sub.id, section:'estudantes',
       detail:{ rows_count:rows.length }, ip:audit.getIp(req) });
     res.json({ ok:true });
+  } catch (err) { next(err); }
+});
+
+router.put('/estudantes/resultados', async (req, res, next) => {
+  try {
+    const sub = await getOrCreateSubmission(req.user.id, req.user.campus_id, req.user.university_id);
+    await checkNotLocked(sub.id, 'estudantes', req.user.role);
+    const rows = Array.isArray(req.body) ? req.body : [];
+    await saveRows(sub.id, 'estudantes_vagas',
+      'submission_id,curso,duracao,area,subarea,regime,nacionalidade,provincia,distrito,grau,vagas_preenchidas,vagas_nao_preenchidas,sort_order',
+      rows, (r, i) => [sub.id, r.curso, r.duracao || null, r.area, r.subarea, r.regime, r.nacionalidade || null,
+        r.provincia, r.distrito || null, r.grau, r.vagas_preenchidas || 0, r.vagas_nao_preenchidas || 0, i]);
+    res.json({ ok: true });
   } catch (err) { next(err); }
 });
 

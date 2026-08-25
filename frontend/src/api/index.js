@@ -34,6 +34,7 @@ export const submissionApi = {
   saveIdIes: (data) => api.put('/submissions/idies', data),
   saveIdIesForSubmission: (submissionId, data) => api.put(`/submissions/${submissionId}/idies`, data),
   saveEstudantes: (data) => api.put('/submissions/estudantes', data),
+  saveEstudantesVagas: (data) => api.put('/submissions/estudantes/resultados', data),
   saveDocentes: (data) => api.put('/submissions/docentes', data),
   saveDocentesResultados: (data) => api.put('/submissions/docentes/resultados', data),
   saveInvestigadores: (data) => api.put('/submissions/investigadores', data),

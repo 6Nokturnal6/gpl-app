@@ -1,5 +1,5 @@
 import { Card, TableWrap, Th, Td, AddRowBtn, ErrorBanner } from '../Layout/FormComponents';
-import { emptyEstudante } from '../../hooks/useSubmission';
+import { emptyEstudante, emptyEstudanteVaga } from '../../hooks/useSubmission';
 import { useState } from 'react';
 import { NEXT_YEAR, CURRENT_YEAR } from '../../utils/appConfig';
 import { validateEstudantes } from '../../utils/validation';
@@ -10,6 +10,7 @@ const NACIONALIDADES = ['Moçambicana','Estrangeira'];
 
 export default function SectionEstudantes({ data, update }) {
   const rows = data.estudantes || [];
+  const vagaRows = data.estudantesVagas || [emptyEstudanteVaga()];
   const [errors, setErrors] = useState({});
 
   const set = (i, k, v) => {
@@ -30,6 +31,9 @@ export default function SectionEstudantes({ data, update }) {
     setErrors(validateEstudantes(updated).errors);
     update('estudantes', updated);
   };
+  const setVaga = (i, k, v) => update('estudantesVagas', vagaRows.map((r, idx) => idx === i ? { ...r, [k]: v } : r));
+  const totalPreenchidas = vagaRows.reduce((a, r) => a + (parseInt(r.vagas_preenchidas) || 0), 0);
+  const totalNaoPreenchidas = vagaRows.reduce((a, r) => a + (parseInt(r.vagas_nao_preenchidas) || 0), 0);
 
   const totalH = rows.reduce((a, r) => a + (parseInt(r.homens) || 0), 0);
   const totalM = rows.reduce((a, r) => a + (parseInt(r.mulheres) || 0), 0);
@@ -118,6 +122,23 @@ export default function SectionEstudantes({ data, update }) {
         </tfoot>
       </TableWrap>
       <AddRowBtn onClick={addRow} label="+ Adicionar curso" />
+      <h3 style={{ marginTop: 24 }}>Quadro 1.2 – Número de vagas preenchidas</h3>
+      <TableWrap>
+        <thead><tr><Th>Nome do curso</Th><Th>Regime</Th><Th>Nacionalidade</Th><Th>Província</Th><Th>Distrito</Th><Th>Grau</Th><Th center>Preenchidas</Th><Th center>Não preenchidas</Th><Th center>Total</Th></tr></thead>
+        <tbody>{vagaRows.map((r, i) => <tr key={i}>
+          <td style={{padding:'3px 6px'}}><input value={r.curso || ''} onChange={e => setVaga(i,'curso',e.target.value)} /></td>
+          <td style={{padding:'3px 6px'}}><select value={r.regime || 'Presencial'} onChange={e => setVaga(i,'regime',e.target.value)}>{REGIMES.map(v => <option key={v}>{v}</option>)}</select></td>
+          <td style={{padding:'3px 6px'}}><select value={r.nacionalidade || 'Moçambicana'} onChange={e => setVaga(i,'nacionalidade',e.target.value)}>{NACIONALIDADES.map(v => <option key={v}>{v}</option>)}</select></td>
+          <td style={{padding:'3px 6px'}}><input value={r.provincia || ''} onChange={e => setVaga(i,'provincia',e.target.value)} /></td>
+          <td style={{padding:'3px 6px'}}><input value={r.distrito || ''} onChange={e => setVaga(i,'distrito',e.target.value)} /></td>
+          <td style={{padding:'3px 6px'}}><select value={r.grau || 'Licenciatura'} onChange={e => setVaga(i,'grau',e.target.value)}>{GRAUS.map(v => <option key={v}>{v}</option>)}</select></td>
+          <td style={{padding:'3px 6px',textAlign:'center'}}><input type="number" min="0" value={r.vagas_preenchidas ?? 0} onChange={e => setVaga(i,'vagas_preenchidas',parseInt(e.target.value) || 0)} /></td>
+          <td style={{padding:'3px 6px',textAlign:'center'}}><input type="number" min="0" value={r.vagas_nao_preenchidas ?? 0} onChange={e => setVaga(i,'vagas_nao_preenchidas',parseInt(e.target.value) || 0)} /></td>
+          <Td total>{(parseInt(r.vagas_preenchidas) || 0) + (parseInt(r.vagas_nao_preenchidas) || 0)}</Td>
+        </tr>)}</tbody>
+        <tfoot><tr><td colSpan={6}>Total</td><Td total>{totalPreenchidas}</Td><Td total>{totalNaoPreenchidas}</Td><Td total>{totalPreenchidas + totalNaoPreenchidas}</Td></tr></tfoot>
+      </TableWrap>
+      <AddRowBtn onClick={() => update('estudantesVagas', [...vagaRows, emptyEstudanteVaga()])} label="+ Adicionar curso ao Quadro 1.2" />
     </Card>
   );
 }

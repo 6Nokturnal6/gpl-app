@@ -89,6 +89,20 @@ async function buildExcel(data) {
   });
   const totRow = wsEst.addRow(['TOTAL','','','','','','','', '', totalH, totalM, totalH+totalM]);
   totRow.eachCell(c => { c.style = headerStyle(LIGHT_GREEN.replace('#','')); c.font = { bold: true, size: 10, color: { argb: 'FF' + GREEN } }; });
+  wsEst.addRow([]);
+  wsEst.addRow(['Quadro 1.2 — Número de vagas preenchidas']).getCell(1).style = { font: { bold: true, size: 10 } };
+  const vagasHdr = wsEst.addRow(['Nome do curso','Duração (anos)','Área ISCED','Sub-área','Regime','Nacionalidade','Província','Distrito','Grau','Preenchidas','Não preenchidas','Total']);
+  vagasHdr.eachCell(c => { c.style = headerStyle(); });
+  let vagasFilled = 0, vagasOpen = 0;
+  (data.estudantesVagas || []).forEach(r => {
+    const filled = Number(r.vagas_preenchidas) || 0;
+    const open = Number(r.vagas_nao_preenchidas) || 0;
+    vagasFilled += filled; vagasOpen += open;
+    const row = wsEst.addRow([r.curso, r.duracao, r.area, r.subarea, r.regime, r.nacionalidade || '', r.provincia, r.distrito || '', r.grau, filled, open, filled + open]);
+    row.eachCell(c => { c.style = cellStyle(); });
+  });
+  const vagasTotal = wsEst.addRow(['TOTAL','','','','','','','', '', vagasFilled, vagasOpen, vagasFilled + vagasOpen]);
+  vagasTotal.eachCell(c => { c.style = headerStyle(LIGHT_GREEN.replace('#','')); c.font = { bold: true, size: 10, color: { argb: 'FF' + GREEN } }; });
 
   // ── Sheet 3: Docentes ──────────────────────────────────────────────────────
   const wsDoc = wb.addWorksheet('Docentes');

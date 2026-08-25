@@ -95,11 +95,11 @@ export default function SectionDocentes({ data, update }) {
     <DocenteTable rows={tp} regime="tempo_parcial" onSet={(i,k,v) => setBase('tempo_parcial', tp, i, k, v)} onAdd={() => update('docentes', [...all, { ...emptyDocente('tempo_parcial') }])} onRemove={(i) => update('docentes', all.filter((r) => !(r.regime === 'tempo_parcial' && tp.indexOf(r) === i)))} />
     <SectionTitle>A2 – Docentes por grupo etário</SectionTitle>
     <AgeTable rows={result.grupoEtario || []} {...editAge('grupoEtario')} />
-    <SectionTitle>A3 – Área de formação</SectionTitle>
+    <SectionTitle>A4 – Área de formação</SectionTitle>
     <EditableTable rows={result.areaFormacao || []} labelKey="area_formacao" labelHeader="Área de formação" fields={DEGREES} {...editRows('areaFormacao','area_formacao')} />
-    <SectionTitle>A4 – Curso de formação</SectionTitle>
+    <SectionTitle>A5 – Curso de formação</SectionTitle>
     <EditableTable rows={result.cursoFormacao || []} labelKey="curso_formacao" labelHeader="Curso de formação" fields={DEGREES} {...editRows('cursoFormacao','curso_formacao')} />
-    <SectionTitle>A5 – Categoria</SectionTitle>
+    <SectionTitle>A6 – Categoria</SectionTitle>
     <EditableTable rows={result.categoria || []} labelKey="categoria" labelHeader="Categoria" fields={[['homens','H'],['mulheres','M']]} onSet={(i,k,v) => setRows('categoria', result.categoria.map((r, idx) => idx === i ? { ...r, [k]: v } : r))} onAdd={() => setRows('categoria', [...result.categoria, { regime: 'tempo_inteiro', categoria: '', homens: 0, mulheres: 0 }])} onRemove={(i) => setRows('categoria', result.categoria.filter((_, idx) => idx !== i))} />
     <SectionTitle>A7 – Tipo de relação contratual</SectionTitle>
     <EditableTable rows={result.relacao || []} labelKey="relacao" labelHeader="Tipo de relação contratual" fields={A7_DEGREES} {...editRows('relacao','relacao')} />

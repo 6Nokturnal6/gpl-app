@@ -208,6 +208,48 @@ function buildPdfBuffer(data) {
       tableRow(docCols, [r.regime === 'tempo_inteiro' ? 'T.Inteiro' : 'T.Parcial', r.provincia, r.nacionalidade, r.lic_h || 0, r.lic_m || 0, r.mest_h || 0, r.mest_m || 0, r.dout_h || 0, r.dout_m || 0, tot], i % 2 === 1);
     });
 
+    const addDocExtraTable = (title, cols, rows, valueFn) => {
+      subTitle(title);
+      tableHeader(cols);
+      (rows || []).forEach((r, i) => tableRow(cols, valueFn(r), i % 2 === 1));
+    };
+    const ageDocCols = [
+      { label: 'Classe de idade', w: 90 }, { label: 'Moz TI', w: 50, align: 'center' },
+      { label: 'Moz TP', w: 50, align: 'center' }, { label: 'Estr TI', w: 50, align: 'center' },
+      { label: 'Estr TP', w: 50, align: 'center' }, { label: 'Total TI', w: 70, align: 'center', total: true },
+      { label: 'Total TP', w: 70, align: 'center', total: true },
+    ];
+    const ageValues = (r) => [
+      r.classe_idade,
+      (parseInt(r.moz_ti_h) || 0) + (parseInt(r.moz_ti_m) || 0),
+      (parseInt(r.moz_tp_h) || 0) + (parseInt(r.moz_tp_m) || 0),
+      (parseInt(r.estr_ti_h) || 0) + (parseInt(r.estr_ti_m) || 0),
+      (parseInt(r.estr_tp_h) || 0) + (parseInt(r.estr_tp_m) || 0),
+      (parseInt(r.moz_ti_h) || 0) + (parseInt(r.moz_ti_m) || 0) + (parseInt(r.estr_ti_h) || 0) + (parseInt(r.estr_ti_m) || 0),
+      (parseInt(r.moz_tp_h) || 0) + (parseInt(r.moz_tp_m) || 0) + (parseInt(r.estr_tp_h) || 0) + (parseInt(r.estr_tp_m) || 0),
+    ];
+    addDocExtraTable('A2 — Docentes por grupo etário, nacionalidade e regime', ageDocCols, data.docentesResultados?.grupoEtario, ageValues);
+
+    const degreeKeys = [
+      ['lic_h', 'Lic.H'], ['lic_m', 'Lic.M'], ['mest_h', 'Mest.H'], ['mest_m', 'Mest.M'],
+      ['dout_h', 'Dout.H'], ['dout_m', 'Dout.M'],
+    ];
+    const degreeCols = [{ label: 'Descrição', w: 155 }, ...degreeKeys.map(([, label]) => ({ label, w: 50, align: 'center' }))];
+    addDocExtraTable('A5 — Docentes por curso de formação, grau e sexo', degreeCols, data.docentesResultados?.cursoFormacao, (r) => [r.curso_formacao, ...degreeKeys.map(([key]) => r[key] || 0)]);
+    const categoryCols = [{ label: 'Categoria', w: 300 }, { label: 'Homens', w: 70, align: 'center' }, { label: 'Mulheres', w: 70, align: 'center' }];
+    addDocExtraTable('A6 — Docentes por regime, categoria e sexo', categoryCols, data.docentesResultados?.categoria, (r) => [
+      `${r.regime === 'tempo_inteiro' ? 'Tempo inteiro' : 'Tempo parcial'} — ${r.categoria || ''}`, r.homens || 0, r.mulheres || 0,
+    ]);
+    const ctaKeys = [
+      ['ensino_primario_h', 'Prim.H'], ['ensino_primario_m', 'Prim.M'], ['secundario_1_h', 'Sec1.H'], ['secundario_1_m', 'Sec1.M'],
+      ['secundario_2_h', 'Sec2.H'], ['secundario_2_m', 'Sec2.M'], ['bacharel_h', 'Bach.H'], ['bacharel_m', 'Bach.M'],
+      ['lic_h', 'Lic.H'], ['lic_m', 'Lic.M'], ['mest_h', 'Mest.H'], ['mest_m', 'Mest.M'], ['dout_h', 'Dout.H'], ['dout_m', 'Dout.M'],
+    ];
+    const ctaCols = [{ label: 'Descrição', w: 105 }, ...ctaKeys.map(([, label]) => ({ label, w: 29, align: 'center' }))];
+    addDocExtraTable('B1 — CTA por nível de formação, sexo e regime', ctaCols, data.cta?.nivelFormacao, (r) => [r.regime, ...ctaKeys.map(([key]) => r[key] || 0)]);
+    addDocExtraTable('B3 — CTA por relação contratual, nível e sexo', ctaCols, data.cta?.relacao, (r) => [r.relacao, ...ctaKeys.map(([key]) => r[key] || 0)]);
+    addDocExtraTable('B4 — CTA por grupo etário, nacionalidade e regime', ageDocCols, data.cta?.grupoEtario, ageValues);
+
     // Investigadores
     const { computeC13 } = require('./investigadoresStats');
     startNewSection('C. Investigadores — ' + YEAR);

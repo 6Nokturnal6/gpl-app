@@ -36,9 +36,20 @@ export const submissionApi = {
   saveEstudantes: (data) => api.put('/submissions/estudantes', data),
   saveDocentes: (data) => api.put('/submissions/docentes', data),
   saveInvestigadores: (data) => api.put('/submissions/investigadores', data),
+  saveInvestigadoresGrupoEtario: (data) => api.put('/submissions/investigadores/grupo-etario', data),
+  saveInvestigadoresAreaFormacao: (data) => api.put('/submissions/investigadores/area-formacao', data),
+  saveInvestigadoresResultados: (data) => api.put('/submissions/investigadores/resultados', data),
   saveFinancas: (data) => api.put('/submissions/financas', data),
   saveInfra: (data) => api.put('/submissions/infra', data),
   savePrevisao: (data) => api.put('/submissions/previsao', data),
+  // Cultura
+  saveDesportoOrganizado: (data) => api.put('/submissions/cultura/desporto-organizado', data),
+  saveDesportoParticipacao: (data) => api.put('/submissions/cultura/desporto-participacao', data),
+  saveCulturaOrganizada: (data) => api.put('/submissions/cultura/cultura-organizada', data),
+  saveCulturaParticipacao: (data) => api.put('/submissions/cultura/cultura-participacao', data),
+  saveGrupos: (data) => api.put('/submissions/cultura/grupos', data),
+  saveTuna: (data) => api.put('/submissions/cultura/tuna', data),
+  saveEstudantesAtividades: (data) => api.put('/submissions/cultura/estudantes-atividades', data),
   submit: () => api.post('/submissions/submit'),
 };
 

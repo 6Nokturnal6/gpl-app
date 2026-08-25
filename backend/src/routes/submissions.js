@@ -47,7 +47,7 @@ router.get('/current', async (req, res, next) => {
       univIdIes = r.rows[0] || null;
     }
 
-    const [estudantes, docentes, investigadores, financas, labs, salas, previsao, locks] =
+    const [estudantes, docentes, investigadores, financas, labs, salas, bib, comp, previsao, desportoOrg, desportoPartic, culturaOrg, culturaPartic, grupos, tuna, estudantesAct, invGrupoEtario, invAreaFormacao, invConf, invProd, invPubsPares, invPubsDoc, invPubsTipo, invOrient, invPesq, invExt, invExtNivel, locks] =
       await Promise.all([
         db.query('SELECT * FROM estudantes WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
         db.query('SELECT * FROM docentes WHERE submission_id=$1 ORDER BY regime,sort_order', [sub.id]),
@@ -55,7 +55,27 @@ router.get('/current', async (req, res, next) => {
         db.query('SELECT * FROM financas WHERE submission_id=$1', [sub.id]),
         db.query('SELECT * FROM infra_labs WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
         db.query('SELECT * FROM infra_salas WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM infra_bibliotecas WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM infra_computadores WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
         db.query('SELECT * FROM previsao WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM desporto_organizado WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM desporto_participacao WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM cultura_organizada WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM cultura_participacao WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM grupos_culturais WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM tuna_academica WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM estudantes_atividades WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM investigadores_grupo_etario WHERE submission_id=$1 ORDER BY regime,sort_order', [sub.id]),
+        db.query('SELECT * FROM investigadores_area_formacao WHERE submission_id=$1 ORDER BY regime,sort_order', [sub.id]),
+        db.query('SELECT * FROM investigadores_conferencias WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM investigadores_producao WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM investigadores_pubs_pares WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM investigadores_pubs_por_docente WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM investigadores_pubs_tipo WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM investigadores_orientacoes WHERE submission_id=$1 ORDER BY tipo,sort_order', [sub.id]),
+        db.query('SELECT * FROM investigadores_pesquisas WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM investigadores_extensao WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM investigadores_extensao_nivel WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
         db.query('SELECT * FROM section_locks WHERE submission_id=$1', [sub.id]),
       ]);
 
@@ -65,9 +85,31 @@ router.get('/current', async (req, res, next) => {
       estudantes: estudantes.rows,
       docentes: docentes.rows,
       investigadores: investigadores.rows,
+      investigadoresGrupoEtario: invGrupoEtario.rows,
+      investigadoresAreaFormacao: invAreaFormacao.rows,
+      investigadoresResultados: {
+        conferencias: invConf.rows,
+        producao: invProd.rows,
+        pubsPares: invPubsPares.rows,
+        pubsPorDocente: invPubsDoc.rows,
+        pubsTipo: invPubsTipo.rows,
+        orientacoes: invOrient.rows,
+        pesquisas: invPesq.rows,
+        extensao: invExt.rows,
+        extensaoNivel: invExtNivel.rows,
+      },
       financas: financas.rows[0] || null,
-      infra: { labs: labs.rows, salas: salas.rows },
+      infra: { labs: labs.rows, salas: salas.rows, bibliotecas: bib.rows, computadores: comp.rows },
       previsao: previsao.rows,
+      cultura: {
+        desportoOrganizado: desportoOrg.rows,
+        desportoParticipacao: desportoPartic.rows,
+        culturaOrganizada: culturaOrg.rows,
+        culturaParticipacao: culturaPartic.rows,
+        grupos: grupos.rows,
+        tuna: tuna.rows,
+        estudantesAtividades: estudantesAct.rows,
+      },
       locks: locks.rows,         // section locks for progress %
     });
   } catch (err) { next(err); }
@@ -102,12 +144,11 @@ router.put('/idies', requireDirector, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-async function saveRows(subId, table, rows, fields, values) {
+async function saveRows(subId, table, fields, rows, valuesFn) {
   await db.query(`DELETE FROM ${table} WHERE submission_id=$1`, [subId]);
   for (let i = 0; i < rows.length; i++) {
-    const r = rows[i];
-    const vals = values(r, i);
-    const placeholders = vals.map((_,j) => `$${j+1}`).join(',');
+    const vals = valuesFn(rows[i], i);
+    const placeholders = vals.map((_, j) => `$${j + 1}`).join(',');
     await db.query(`INSERT INTO ${table} (${fields}) VALUES (${placeholders})`, vals);
   }
 }
@@ -119,8 +160,8 @@ router.put('/estudantes', async (req, res, next) => {
     await checkNotLocked(sub.id, 'estudantes', req.user.role);
     const rows = Array.isArray(req.body) ? req.body : [];
     await saveRows(sub.id, 'estudantes',
-      'submission_id,curso,duracao,area,subarea,regime,provincia,grau,homens,mulheres,sort_order',
-      rows, (r,i) => [sub.id,r.curso,r.duracao||null,r.area,r.subarea,r.regime,r.provincia,r.grau,r.homens||0,r.mulheres||0,i]);
+      'submission_id,curso,duracao,area,subarea,regime,nacionalidade,provincia,distrito,grau,homens,mulheres,sort_order',
+      rows, (r,i) => [sub.id,r.curso,r.duracao||null,r.area,r.subarea,r.regime,r.nacionalidade||null,r.provincia,r.distrito||null,r.grau,r.homens||0,r.mulheres||0,i]);
     audit.log({ userId:req.user.id, userEmail:req.user.email, userRole:req.user.role,
       action:'save_section', entityType:'submission', entityId:sub.id, section:'estudantes',
       detail:{ rows_count:rows.length }, ip:audit.getIp(req) });
@@ -135,8 +176,8 @@ router.put('/docentes', async (req, res, next) => {
     await checkNotLocked(sub.id, 'docentes', req.user.role);
     const rows = Array.isArray(req.body) ? req.body : [];
     await saveRows(sub.id, 'docentes',
-      'submission_id,regime,provincia,distrito,nacionalidade,lic_h,lic_m,mest_h,mest_m,dout_h,dout_m,sort_order',
-      rows, (r,i) => [sub.id,r.regime,r.provincia,r.distrito,r.nacionalidade,r.lic_h||0,r.lic_m||0,r.mest_h||0,r.mest_m||0,r.dout_h||0,r.dout_m||0,i]);
+      'submission_id,regime,provincia,distrito,nacionalidade,lic_h,lic_m,mest_h,mest_m,dout_h,dout_m,pos_h,pos_m,sort_order',
+      rows, (r,i) => [sub.id,r.regime,r.provincia,r.distrito,r.nacionalidade,r.lic_h||0,r.lic_m||0,r.mest_h||0,r.mest_m||0,r.dout_h||0,r.dout_m||0,r.pos_h||0,r.pos_m||0,i]);
     res.json({ ok:true });
   } catch (err) { next(err); }
 });
@@ -148,8 +189,90 @@ router.put('/investigadores', async (req, res, next) => {
     await checkNotLocked(sub.id, 'investigadores', req.user.role);
     const rows = Array.isArray(req.body) ? req.body : [];
     await saveRows(sub.id, 'investigadores',
-      'submission_id,regime,nacionalidade,lic_h,lic_m,mest_h,mest_m,dout_h,dout_m,sort_order',
-      rows, (r,i) => [sub.id,r.regime,r.nacionalidade,r.lic_h||0,r.lic_m||0,r.mest_h||0,r.mest_m||0,r.dout_h||0,r.dout_m||0,i]);
+      'submission_id,regime,nacionalidade,lic_h,lic_m,mest_h,mest_m,dout_h,dout_m,pos_h,pos_m,sort_order',
+      rows, (r,i) => [sub.id,r.regime,r.nacionalidade,r.lic_h||0,r.lic_m||0,r.mest_h||0,r.mest_m||0,r.dout_h||0,r.dout_m||0,r.pos_h||0,r.pos_m||0,i]);
+    res.json({ ok:true });
+  } catch (err) { next(err); }
+});
+
+// PUT /api/submissions/investigadores/grupo-etario — C.2 age groups
+router.put('/investigadores/grupo-etario', async (req, res, next) => {
+  try {
+    const sub = await getOrCreateSubmission(req.user.id, req.user.campus_id, req.user.university_id);
+    await checkNotLocked(sub.id, 'investigadores', req.user.role);
+    const rows = Array.isArray(req.body) ? req.body : [];
+    await saveRows(sub.id, 'investigadores_grupo_etario',
+      'submission_id,regime,classe_idade,moz_h,moz_m,estr_h,estr_m,sort_order',
+      rows, (r, i) => [sub.id, r.regime, r.classe_idade, r.moz_h||0, r.moz_m||0, r.estr_h||0, r.estr_m||0, i]);
+    res.json({ ok:true });
+  } catch (err) { next(err); }
+});
+
+// PUT /api/submissions/investigadores/area-formacao — C.3
+router.put('/investigadores/area-formacao', async (req, res, next) => {
+  try {
+    const sub = await getOrCreateSubmission(req.user.id, req.user.campus_id, req.user.university_id);
+    await checkNotLocked(sub.id, 'investigadores', req.user.role);
+    const rows = Array.isArray(req.body) ? req.body : [];
+    await saveRows(sub.id, 'investigadores_area_formacao',
+      'submission_id,regime,area_formacao,moz_h,moz_m,estr_h,estr_m,sort_order',
+      rows, (r, i) => [sub.id, r.regime, r.area_formacao, r.moz_h||0, r.moz_m||0, r.estr_h||0, r.estr_m||0, i]);
+    res.json({ ok:true });
+  } catch (err) { next(err); }
+});
+
+// PUT /api/submissions/investigadores/resultados — C.4 + C.5 + C.6
+router.put('/investigadores/resultados', async (req, res, next) => {
+  try {
+    const sub = await getOrCreateSubmission(req.user.id, req.user.campus_id, req.user.university_id);
+    await checkNotLocked(sub.id, 'investigadores', req.user.role);
+    const d = req.body || {};
+
+    await saveRows(sub.id, 'investigadores_conferencias',
+      'submission_id,tipo_conferencia,lic_h,lic_m,mest_h,mest_m,dout_h,dout_m,pos_h,pos_m,sort_order',
+      d.conferencias || [],
+      (r, i) => [sub.id, r.tipo_conferencia, r.lic_h||0, r.lic_m||0, r.mest_h||0, r.mest_m||0, r.dout_h||0, r.dout_m||0, r.pos_h||0, r.pos_m||0, i]);
+
+    await saveRows(sub.id, 'investigadores_producao',
+      'submission_id,area_formacao,artigos_h,artigos_m,livros_h,livros_m,capitulos_h,capitulos_m,conf_nac_h,conf_nac_m,conf_int_h,conf_int_m,sort_order',
+      d.producao || [],
+      (r, i) => [sub.id, r.area_formacao, r.artigos_h||0, r.artigos_m||0, r.livros_h||0, r.livros_m||0, r.capitulos_h||0, r.capitulos_m||0, r.conf_nac_h||0, r.conf_nac_m||0, r.conf_int_h||0, r.conf_int_m||0, i]);
+
+    await saveRows(sub.id, 'investigadores_pubs_pares',
+      'submission_id,provincia,lic_h,lic_m,mest_h,mest_m,dout_h,dout_m,pos_h,pos_m,sort_order',
+      d.pubsPares || [],
+      (r, i) => [sub.id, r.provincia||null, r.lic_h||0, r.lic_m||0, r.mest_h||0, r.mest_m||0, r.dout_h||0, r.dout_m||0, r.pos_h||0, r.pos_m||0, i]);
+
+    await saveRows(sub.id, 'investigadores_pubs_por_docente',
+      'submission_id,num_publicacoes,lic_h,lic_m,mest_h,mest_m,dout_h,dout_m,sort_order',
+      d.pubsPorDocente || [],
+      (r, i) => [sub.id, String(r.num_publicacoes), r.lic_h||0, r.lic_m||0, r.mest_h||0, r.mest_m||0, r.dout_h||0, r.dout_m||0, i]);
+
+    await saveRows(sub.id, 'investigadores_pubs_tipo',
+      'submission_id,tipo_publicacao,lic_h,lic_m,mest_h,mest_m,dout_h,dout_m,sort_order',
+      d.pubsTipo || [],
+      (r, i) => [sub.id, r.tipo_publicacao, r.lic_h||0, r.lic_m||0, r.mest_h||0, r.mest_m||0, r.dout_h||0, r.dout_m||0, i]);
+
+    await saveRows(sub.id, 'investigadores_orientacoes',
+      'submission_id,tipo,num_orientacoes,lic_h,lic_m,mest_h,mest_m,dout_h,dout_m,sort_order',
+      d.orientacoes || [],
+      (r, i) => [sub.id, r.tipo, String(r.num_orientacoes), r.lic_h||0, r.lic_m||0, r.mest_h||0, r.mest_m||0, r.dout_h||0, r.dout_m||0, i]);
+
+    await saveRows(sub.id, 'investigadores_pesquisas',
+      'submission_id,em_curso,concluidas,sort_order',
+      d.pesquisas || [],
+      (r, i) => [sub.id, r.em_curso||0, r.concluidas||0, i]);
+
+    await saveRows(sub.id, 'investigadores_extensao',
+      'submission_id,accao,quantidade,sort_order',
+      d.extensao || [],
+      (r, i) => [sub.id, r.accao, r.quantidade||0, i]);
+
+    await saveRows(sub.id, 'investigadores_extensao_nivel',
+      'submission_id,nivel,quantidade,sort_order',
+      d.extensaoNivel || [],
+      (r, i) => [sub.id, r.nivel||null, r.quantidade||0, i]);
+
     res.json({ ok:true });
   } catch (err) { next(err); }
 });
@@ -161,13 +284,18 @@ router.put('/financas', async (req, res, next) => {
     await checkNotLocked(sub.id, 'financas', req.user.role);
     const d = req.body;
     await db.query(`
-      INSERT INTO financas (submission_id,oge,doacoes,creditos,proprias,func_ensino,func_investig,func_admin,sal_docentes,sal_tecnicos,desp_invest)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      INSERT INTO financas (submission_id,oge,doacoes,creditos,proprias,func_ensino,func_investig,func_admin,sal_docentes,sal_tecnicos,sal_outros,desp_invest,desp_deprec,desp_invest_outros,desp_reembolso)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
       ON CONFLICT (submission_id) DO UPDATE SET
         oge=$2,doacoes=$3,creditos=$4,proprias=$5,func_ensino=$6,func_investig=$7,
-        func_admin=$8,sal_docentes=$9,sal_tecnicos=$10,desp_invest=$11`,
+        func_admin=$8,sal_docentes=$9,sal_tecnicos=$10,sal_outros=$11,desp_invest=$12,
+        desp_deprec=$13,desp_invest_outros=$14,desp_reembolso=$15`,
       [sub.id,d.oge||0,d.doacoes||0,d.creditos||0,d.proprias||0,
-       d.func_ensino||0,d.func_investig||0,d.func_admin||0,d.sal_docentes||0,d.sal_tecnicos||0,d.desp_invest||0]);
+       d.func_ensino||0,d.func_investig||0,d.func_admin||0,d.sal_docentes||0,d.sal_tecnicos||0,d.sal_outros||0,
+       d.desp_invest||0,d.desp_deprec||0,d.desp_invest_outros||0,d.desp_reembolso||0]);
+    audit.log({ userId:req.user.id, userEmail:req.user.email, userRole:req.user.role,
+      action:'save_section', entityType:'submission', entityId:sub.id, section:'financas',
+      detail:{ oge:d.oge, doacoes:d.doacoes, creditos:d.creditos, proprias:d.proprias }, ip:audit.getIp(req) });
     res.json({ ok:true });
   } catch (err) { next(err); }
 });
@@ -177,9 +305,11 @@ router.put('/infra', async (req, res, next) => {
   try {
     const sub = await getOrCreateSubmission(req.user.id, req.user.campus_id, req.user.university_id);
     await checkNotLocked(sub.id, 'infra', req.user.role);
-    const { labs, salas } = req.body;
+    const { labs, salas, bibliotecas, computadores } = req.body;
     await db.query('DELETE FROM infra_labs WHERE submission_id=$1', [sub.id]);
     await db.query('DELETE FROM infra_salas WHERE submission_id=$1', [sub.id]);
+    await db.query('DELETE FROM infra_bibliotecas WHERE submission_id=$1', [sub.id]);
+    await db.query('DELETE FROM infra_computadores WHERE submission_id=$1', [sub.id]);
     for (let i=0; i<(labs||[]).length; i++) {
       const r=labs[i];
       await db.query('INSERT INTO infra_labs (submission_id,nome,area,subarea,provincia,distrito,num_labs,sort_order) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
@@ -189,6 +319,16 @@ router.put('/infra', async (req, res, next) => {
       const r=salas[i];
       await db.query('INSERT INTO infra_salas (submission_id,unidade,provincia,distrito,grau,num_salas,sort_order) VALUES ($1,$2,$3,$4,$5,$6,$7)',
         [sub.id,r.unidade,r.provincia,r.distrito,r.grau,r.num_salas||0,i]);
+    }
+    for (let i=0; i<(bibliotecas||[]).length; i++) {
+      const r=bibliotecas[i];
+      await db.query('INSERT INTO infra_bibliotecas (submission_id,unidade,provincia,distrito,num_fisicas,num_virtuais,sort_order) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+        [sub.id,r.unidade,r.provincia,r.distrito,r.num_fisicas||0,r.num_virtuais||0,i]);
+    }
+    for (let i=0; i<(computadores||[]).length; i++) {
+      const r=computadores[i];
+      await db.query('INSERT INTO infra_computadores (submission_id,unidade,provincia,distrito,num_computadores,sort_order) VALUES ($1,$2,$3,$4,$5,$6)',
+        [sub.id,r.unidade,r.provincia,r.distrito,r.num_computadores||0,i]);
     }
     res.json({ ok:true });
   } catch (err) { next(err); }
@@ -203,6 +343,92 @@ router.put('/previsao', async (req, res, next) => {
     await saveRows(sub.id, 'previsao',
       'submission_id,curso,duracao,area,grau,provincia,homens,mulheres,sort_order',
       rows, (r,i) => [sub.id,r.curso,r.duracao||null,r.area,r.grau,r.provincia,r.homens||0,r.mulheres||0,i]);
+    res.json({ ok:true });
+  } catch (err) { next(err); }
+});
+
+// Cultura endpoints (8 sections)
+// PUT /api/submissions/cultura/desporto-organizado
+router.put('/cultura/desporto-organizado', async (req, res, next) => {
+  try {
+    const sub = await getOrCreateSubmission(req.user.id, req.user.campus_id, req.user.university_id);
+    await checkNotLocked(sub.id, 'cultura', req.user.role);
+    const rows = Array.isArray(req.body) ? req.body : [];
+    await saveRows(sub.id, 'desporto_organizado',
+      'submission_id,nome_atividade,modalidade,data_local,objetivos,estudantes_h,estudantes_m,docentes_h,docentes_m,sort_order',
+      rows, (r,i) => [sub.id,r.nome_atividade,r.modalidade,r.data_local,r.objetivos,r.estudantes_h||0,r.estudantes_m||0,r.docentes_h||0,r.docentes_m||0,i]);
+    res.json({ ok:true });
+  } catch (err) { next(err); }
+});
+
+router.put('/cultura/desporto-participacao', async (req, res, next) => {
+  try {
+    const sub = await getOrCreateSubmission(req.user.id, req.user.campus_id, req.user.university_id);
+    await checkNotLocked(sub.id, 'cultura', req.user.role);
+    const rows = Array.isArray(req.body) ? req.body : [];
+    await saveRows(sub.id, 'desporto_participacao',
+      'submission_id,nome_atividade,entidade_org,data_local,objetivos,estudantes_h,estudantes_m,docentes_h,docentes_m,classificacao,sort_order',
+      rows, (r,i) => [sub.id,r.nome_atividade,r.entidade_org,r.data_local,r.objetivos,r.estudantes_h||0,r.estudantes_m||0,r.docentes_h||0,r.docentes_m||0,r.classificacao||null,i]);
+    res.json({ ok:true });
+  } catch (err) { next(err); }
+});
+
+router.put('/cultura/cultura-organizada', async (req, res, next) => {
+  try {
+    const sub = await getOrCreateSubmission(req.user.id, req.user.campus_id, req.user.university_id);
+    await checkNotLocked(sub.id, 'cultura', req.user.role);
+    const rows = Array.isArray(req.body) ? req.body : [];
+    await saveRows(sub.id, 'cultura_organizada',
+      'submission_id,nome_atividade,tipo_atividade,data_local,objetivos,estudantes_h,estudantes_m,docentes_h,docentes_m,sort_order',
+      rows, (r,i) => [sub.id,r.nome_atividade,r.tipo_atividade,r.data_local,r.objetivos,r.estudantes_h||0,r.estudantes_m||0,r.docentes_h||0,r.docentes_m||0,i]);
+    res.json({ ok:true });
+  } catch (err) { next(err); }
+});
+
+router.put('/cultura/cultura-participacao', async (req, res, next) => {
+  try {
+    const sub = await getOrCreateSubmission(req.user.id, req.user.campus_id, req.user.university_id);
+    await checkNotLocked(sub.id, 'cultura', req.user.role);
+    const rows = Array.isArray(req.body) ? req.body : [];
+    await saveRows(sub.id, 'cultura_participacao',
+      'submission_id,nome_evento,entidade_org,data_local,objetivos,estudantes_h,estudantes_m,docentes_h,docentes_m,distincoes,sort_order',
+      rows, (r,i) => [sub.id,r.nome_evento,r.entidade_org,r.data_local,r.objetivos,r.estudantes_h||0,r.estudantes_m||0,r.docentes_h||0,r.docentes_m||0,r.distincoes||null,i]);
+    res.json({ ok:true });
+  } catch (err) { next(err); }
+});
+
+router.put('/cultura/grupos', async (req, res, next) => {
+  try {
+    const sub = await getOrCreateSubmission(req.user.id, req.user.campus_id, req.user.university_id);
+    await checkNotLocked(sub.id, 'cultura', req.user.role);
+    const rows = Array.isArray(req.body) ? req.body : [];
+    await saveRows(sub.id, 'grupos_culturais',
+      'submission_id,nome_grupo,expressao_artistica,objetivos,estudantes_h,estudantes_m,docentes_h,docentes_m,distincoes,sort_order',
+      rows, (r,i) => [sub.id,r.nome_grupo,r.expressao_artistica,r.objetivos,r.estudantes_h||0,r.estudantes_m||0,r.docentes_h||0,r.docentes_m||0,r.distincoes||null,i]);
+    res.json({ ok:true });
+  } catch (err) { next(err); }
+});
+
+router.put('/cultura/tuna', async (req, res, next) => {
+  try {
+    const sub = await getOrCreateSubmission(req.user.id, req.user.campus_id, req.user.university_id);
+    await checkNotLocked(sub.id, 'cultura', req.user.role);
+    const rows = Array.isArray(req.body) ? req.body : [];
+    await saveRows(sub.id, 'tuna_academica',
+      'submission_id,nome_membro,cargo,ano_ingresso,objetivos,distincoes,sort_order',
+      rows, (r,i) => [sub.id,r.nome_membro,r.cargo,r.ano_ingresso||null,r.objetivos||null,r.distincoes||null,i]);
+    res.json({ ok:true });
+  } catch (err) { next(err); }
+});
+
+router.put('/cultura/estudantes-atividades', async (req, res, next) => {
+  try {
+    const sub = await getOrCreateSubmission(req.user.id, req.user.campus_id, req.user.university_id);
+    await checkNotLocked(sub.id, 'cultura', req.user.role);
+    const rows = Array.isArray(req.body) ? req.body : [];
+    await saveRows(sub.id, 'estudantes_atividades',
+      'submission_id,nome_completo,num_estudante,curso,ano_frequencia,sexo,atividade,evento,sort_order',
+      rows, (r,i) => [sub.id,r.nome_completo,r.num_estudante,r.curso,r.ano_frequencia,r.sexo,r.atividade,r.evento,i]);
     res.json({ ok:true });
   } catch (err) { next(err); }
 });
@@ -290,13 +516,3 @@ router.put('/:submissionId/idies', requireDirector, async (req, res, next) => {
 });
 
 module.exports = router;
-
-// Helper used above (inline)
-async function saveRows(subId, table, fields, rows, valuesFn) {
-  await db.query(`DELETE FROM ${table} WHERE submission_id=$1`, [subId]);
-  for (let i=0; i<rows.length; i++) {
-    const vals = valuesFn(rows[i], i);
-    const ph = vals.map((_,j)=>`$${j+1}`).join(',');
-    await db.query(`INSERT INTO ${table} (${fields}) VALUES (${ph})`, vals);
-  }
-}

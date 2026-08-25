@@ -66,9 +66,13 @@ CREATE TABLE IF NOT EXISTS estudantes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
   curso TEXT, duracao INTEGER, area TEXT, subarea TEXT,
-  regime TEXT, provincia TEXT, grau TEXT,
+  regime TEXT, nacionalidade TEXT, provincia TEXT, distrito TEXT, grau TEXT,
   homens INTEGER DEFAULT 0, mulheres INTEGER DEFAULT 0, sort_order INTEGER DEFAULT 0
 );
+
+-- Add missing columns if they don't exist
+ALTER TABLE estudantes ADD COLUMN IF NOT EXISTS nacionalidade TEXT;
+ALTER TABLE estudantes ADD COLUMN IF NOT EXISTS distrito TEXT;
 
 CREATE TABLE IF NOT EXISTS docentes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -76,8 +80,13 @@ CREATE TABLE IF NOT EXISTS docentes (
   regime TEXT, provincia TEXT, distrito TEXT, nacionalidade TEXT,
   lic_h INTEGER DEFAULT 0, lic_m INTEGER DEFAULT 0,
   mest_h INTEGER DEFAULT 0, mest_m INTEGER DEFAULT 0,
-  dout_h INTEGER DEFAULT 0, dout_m INTEGER DEFAULT 0, sort_order INTEGER DEFAULT 0
+  dout_h INTEGER DEFAULT 0, dout_m INTEGER DEFAULT 0,
+  pos_h INTEGER DEFAULT 0, pos_m INTEGER DEFAULT 0, sort_order INTEGER DEFAULT 0
 );
+
+-- Add Pós-Graduação columns if they don't exist
+ALTER TABLE docentes ADD COLUMN IF NOT EXISTS pos_h INTEGER DEFAULT 0;
+ALTER TABLE docentes ADD COLUMN IF NOT EXISTS pos_m INTEGER DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS investigadores (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -85,7 +94,134 @@ CREATE TABLE IF NOT EXISTS investigadores (
   regime TEXT, nacionalidade TEXT,
   lic_h INTEGER DEFAULT 0, lic_m INTEGER DEFAULT 0,
   mest_h INTEGER DEFAULT 0, mest_m INTEGER DEFAULT 0,
-  dout_h INTEGER DEFAULT 0, dout_m INTEGER DEFAULT 0, sort_order INTEGER DEFAULT 0
+  dout_h INTEGER DEFAULT 0, dout_m INTEGER DEFAULT 0,
+  pos_h INTEGER DEFAULT 0, pos_m INTEGER DEFAULT 0, sort_order INTEGER DEFAULT 0
+);
+
+-- Add Pós-Graduação columns if they don't exist
+ALTER TABLE investigadores ADD COLUMN IF NOT EXISTS pos_h INTEGER DEFAULT 0;
+ALTER TABLE investigadores ADD COLUMN IF NOT EXISTS pos_m INTEGER DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS investigadores_grupo_etario (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  regime TEXT NOT NULL,
+  classe_idade TEXT NOT NULL,
+  moz_h INTEGER DEFAULT 0,
+  moz_m INTEGER DEFAULT 0,
+  estr_h INTEGER DEFAULT 0,
+  estr_m INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS investigadores_area_formacao (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  regime TEXT NOT NULL,
+  area_formacao TEXT NOT NULL,
+  moz_h INTEGER DEFAULT 0,
+  moz_m INTEGER DEFAULT 0,
+  estr_h INTEGER DEFAULT 0,
+  estr_m INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0
+);
+
+-- C.4.1 Conferências
+CREATE TABLE IF NOT EXISTS investigadores_conferencias (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  tipo_conferencia TEXT NOT NULL,
+  lic_h INTEGER DEFAULT 0, lic_m INTEGER DEFAULT 0,
+  mest_h INTEGER DEFAULT 0, mest_m INTEGER DEFAULT 0,
+  dout_h INTEGER DEFAULT 0, dout_m INTEGER DEFAULT 0,
+  pos_h INTEGER DEFAULT 0, pos_m INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0
+);
+
+-- C.4.2 Produção científica por área
+CREATE TABLE IF NOT EXISTS investigadores_producao (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  area_formacao TEXT NOT NULL,
+  artigos_h INTEGER DEFAULT 0, artigos_m INTEGER DEFAULT 0,
+  livros_h INTEGER DEFAULT 0, livros_m INTEGER DEFAULT 0,
+  capitulos_h INTEGER DEFAULT 0, capitulos_m INTEGER DEFAULT 0,
+  conf_nac_h INTEGER DEFAULT 0, conf_nac_m INTEGER DEFAULT 0,
+  conf_int_h INTEGER DEFAULT 0, conf_int_m INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0
+);
+
+-- C.4.3 Investigadores com publicações por pares (por província)
+CREATE TABLE IF NOT EXISTS investigadores_pubs_pares (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  provincia TEXT,
+  lic_h INTEGER DEFAULT 0, lic_m INTEGER DEFAULT 0,
+  mest_h INTEGER DEFAULT 0, mest_m INTEGER DEFAULT 0,
+  dout_h INTEGER DEFAULT 0, dout_m INTEGER DEFAULT 0,
+  pos_h INTEGER DEFAULT 0, pos_m INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0
+);
+
+-- C.4.4 Publicações por docente (faixas 1–6)
+CREATE TABLE IF NOT EXISTS investigadores_pubs_por_docente (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  num_publicacoes TEXT NOT NULL,
+  lic_h INTEGER DEFAULT 0, lic_m INTEGER DEFAULT 0,
+  mest_h INTEGER DEFAULT 0, mest_m INTEGER DEFAULT 0,
+  dout_h INTEGER DEFAULT 0, dout_m INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0
+);
+
+-- C.4.5 Publicações por tipo
+CREATE TABLE IF NOT EXISTS investigadores_pubs_tipo (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  tipo_publicacao TEXT NOT NULL,
+  lic_h INTEGER DEFAULT 0, lic_m INTEGER DEFAULT 0,
+  mest_h INTEGER DEFAULT 0, mest_m INTEGER DEFAULT 0,
+  dout_h INTEGER DEFAULT 0, dout_m INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0
+);
+
+-- C.5 Orientações (dissertação / monografia / tese)
+CREATE TABLE IF NOT EXISTS investigadores_orientacoes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  tipo TEXT NOT NULL,
+  num_orientacoes TEXT NOT NULL,
+  lic_h INTEGER DEFAULT 0, lic_m INTEGER DEFAULT 0,
+  mest_h INTEGER DEFAULT 0, mest_m INTEGER DEFAULT 0,
+  dout_h INTEGER DEFAULT 0, dout_m INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0
+);
+
+-- C.6.1 Número de pesquisas
+CREATE TABLE IF NOT EXISTS investigadores_pesquisas (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  em_curso INTEGER DEFAULT 0,
+  concluidas INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0
+);
+
+-- C.6.1 Actividades de extensão (fixed actions)
+CREATE TABLE IF NOT EXISTS investigadores_extensao (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  accao TEXT NOT NULL,
+  quantidade INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0
+);
+
+-- C.6.2 Extensão por nível de formação
+CREATE TABLE IF NOT EXISTS investigadores_extensao_nivel (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  nivel TEXT,
+  quantidade INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS financas (
@@ -95,9 +231,18 @@ CREATE TABLE IF NOT EXISTS financas (
   creditos NUMERIC DEFAULT 0, proprias NUMERIC DEFAULT 0,
   func_ensino NUMERIC DEFAULT 0, func_investig NUMERIC DEFAULT 0,
   func_admin NUMERIC DEFAULT 0, sal_docentes NUMERIC DEFAULT 0,
-  sal_tecnicos NUMERIC DEFAULT 0, desp_invest NUMERIC DEFAULT 0,
+  sal_tecnicos NUMERIC DEFAULT 0, sal_outros NUMERIC DEFAULT 0, desp_invest NUMERIC DEFAULT 0,
+  desp_deprec NUMERIC DEFAULT 0, desp_invest_outros NUMERIC DEFAULT 0, desp_reembolso NUMERIC DEFAULT 0,
   UNIQUE(submission_id)
 );
+
+-- Add administrative staff salary column if it doesn't exist
+ALTER TABLE financas ADD COLUMN IF NOT EXISTS sal_tecnicos NUMERIC DEFAULT 0;
+ALTER TABLE financas ADD COLUMN IF NOT EXISTS sal_outros NUMERIC DEFAULT 0;
+ALTER TABLE financas ADD COLUMN IF NOT EXISTS desp_invest NUMERIC DEFAULT 0;
+ALTER TABLE financas ADD COLUMN IF NOT EXISTS desp_deprec NUMERIC DEFAULT 0;
+ALTER TABLE financas ADD COLUMN IF NOT EXISTS desp_invest_outros NUMERIC DEFAULT 0;
+ALTER TABLE financas ADD COLUMN IF NOT EXISTS desp_reembolso NUMERIC DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS infra_labs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -113,11 +258,91 @@ CREATE TABLE IF NOT EXISTS infra_salas (
   num_salas INTEGER DEFAULT 0, sort_order INTEGER DEFAULT 0
 );
 
+CREATE TABLE IF NOT EXISTS infra_bibliotecas (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  unidade TEXT, provincia TEXT, distrito TEXT,
+  num_fisicas INTEGER DEFAULT 0, num_virtuais INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS infra_computadores (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  unidade TEXT, provincia TEXT, distrito TEXT,
+  num_computadores INTEGER DEFAULT 0, sort_order INTEGER DEFAULT 0
+);
+
 CREATE TABLE IF NOT EXISTS previsao (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
   curso TEXT, duracao INTEGER, area TEXT, grau TEXT, provincia TEXT,
   homens INTEGER DEFAULT 0, mulheres INTEGER DEFAULT 0, sort_order INTEGER DEFAULT 0
+);
+
+-- Desporto e Cultura (8 sections)
+CREATE TABLE IF NOT EXISTS desporto_organizado (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  nome_atividade TEXT, modalidade TEXT, data_local TEXT, objetivos TEXT,
+  estudantes_h INTEGER DEFAULT 0, estudantes_m INTEGER DEFAULT 0,
+  docentes_h INTEGER DEFAULT 0, docentes_m INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS desporto_participacao (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  nome_atividade TEXT, entidade_org TEXT, data_local TEXT, objetivos TEXT,
+  estudantes_h INTEGER DEFAULT 0, estudantes_m INTEGER DEFAULT 0,
+  docentes_h INTEGER DEFAULT 0, docentes_m INTEGER DEFAULT 0,
+  classificacao TEXT,
+  sort_order INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS cultura_organizada (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  nome_atividade TEXT, tipo_atividade TEXT, data_local TEXT, objetivos TEXT,
+  estudantes_h INTEGER DEFAULT 0, estudantes_m INTEGER DEFAULT 0,
+  docentes_h INTEGER DEFAULT 0, docentes_m INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS cultura_participacao (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  nome_evento TEXT, entidade_org TEXT, data_local TEXT, objetivos TEXT,
+  estudantes_h INTEGER DEFAULT 0, estudantes_m INTEGER DEFAULT 0,
+  docentes_h INTEGER DEFAULT 0, docentes_m INTEGER DEFAULT 0,
+  distincoes TEXT,
+  sort_order INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS grupos_culturais (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  nome_grupo TEXT, expressao_artistica TEXT, objetivos TEXT,
+  estudantes_h INTEGER DEFAULT 0, estudantes_m INTEGER DEFAULT 0,
+  docentes_h INTEGER DEFAULT 0, docentes_m INTEGER DEFAULT 0,
+  distincoes TEXT,
+  sort_order INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS tuna_academica (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  nome_membro TEXT, cargo TEXT, ano_ingresso INTEGER, objetivos TEXT,
+  distincoes TEXT,
+  sort_order INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS estudantes_atividades (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  nome_completo TEXT, num_estudante TEXT, curso TEXT, ano_frequencia TEXT, sexo TEXT,
+  atividade TEXT, evento TEXT,
+  sort_order INTEGER DEFAULT 0
 );
 
 CREATE OR REPLACE FUNCTION update_updated_at()

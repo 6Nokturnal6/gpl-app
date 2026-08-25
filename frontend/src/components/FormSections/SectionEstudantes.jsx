@@ -5,6 +5,7 @@ import { NEXT_YEAR, CURRENT_YEAR } from '../../utils/appConfig';
 
 const GRAUS = ['Licenciatura','Mestrado','Doutoramento','Pós-Graduação','Diploma de Especialização'];
 const REGIMES = ['Presencial','Distância','Misto'];
+const NACIONALIDADES = ['Moçambicana','Estrangeira'];
 
 export default function SectionEstudantes({ data, update }) {
   const rows = data.estudantes || [];
@@ -36,7 +37,9 @@ export default function SectionEstudantes({ data, update }) {
             <Th>Área ISCED</Th>
             <Th>Sub-área</Th>
             <Th>Regime</Th>
+            <Th>Nacionalidade</Th>
             <Th>Província</Th>
+            <Th>Distrito</Th>
             <Th>Grau</Th>
             <Th center>Homens</Th>
             <Th center>Mulheres</Th>
@@ -67,7 +70,15 @@ export default function SectionEstudantes({ data, update }) {
                   </select>
                 </td>
                 <td style={{ border: '0.5px solid var(--color-border-tertiary)', padding: '3px 6px' }}>
+                  <select value={r.nacionalidade || 'Moçambicana'} onChange={e => set(i,'nacionalidade',e.target.value)} style={{ border:'none',background:'transparent',fontSize:12 }}>
+                    {NACIONALIDADES.map(n => <option key={n}>{n}</option>)}
+                  </select>
+                </td>
+                <td style={{ border: '0.5px solid var(--color-border-tertiary)', padding: '3px 6px' }}>
                   <input value={r.provincia || ''} onChange={e => set(i,'provincia',e.target.value)} style={{ border:'none',background:'transparent',width:70,fontSize:12 }} placeholder="Prov." />
+                </td>
+                <td style={{ border: '0.5px solid var(--color-border-tertiary)', padding: '3px 6px' }}>
+                  <input value={r.distrito || ''} onChange={e => set(i,'distrito',e.target.value)} style={{ border:'none',background:'transparent',width:70,fontSize:12 }} placeholder="Dist." />
                 </td>
                 <td style={{ border: '0.5px solid var(--color-border-tertiary)', padding: '3px 6px' }}>
                   <select value={r.grau || 'Licenciatura'} onChange={e => set(i,'grau',e.target.value)} style={{ border:'none',background:'transparent',fontSize:12 }}>
@@ -90,7 +101,7 @@ export default function SectionEstudantes({ data, update }) {
         </tbody>
         <tfoot>
           <tr>
-            <td colSpan={7} style={{ padding:'6px 8px',fontWeight:500,fontSize:12,textAlign:'right',background:'var(--color-background-secondary)',border:'0.5px solid var(--color-border-tertiary)' }}>Total</td>
+            <td colSpan={9} style={{ padding:'6px 8px',fontWeight:500,fontSize:12,textAlign:'right',background:'var(--color-background-secondary)',border:'0.5px solid var(--color-border-tertiary)' }}>Total</td>
             <Td total>{totalH}</Td>
             <Td total>{totalM}</Td>
             <Td total>{totalH + totalM}</Td>

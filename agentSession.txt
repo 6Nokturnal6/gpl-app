@@ -1,1 +1,30 @@
-agent --resume=2c4dec8b-40bc-4617-8314-b51abe3e3a26
+agent --resume=2c4dec8b-40bc-4617-8314-b51abe3e3a26 --- cursor
+ 20260717
+ 1. Corrigir os 4 bugs de aglutinação (rápido, alto impacto no Sumário).
+  2. Finanças: UI desp_invest + Quadro 1.
+  3. Infra: bibliotecas + computadores.
+  4. Depois, em blocos: Estudantes 1.2–1.4… e Docentes A2+/CTA.
+
+
+
+copilot --resume=4c7faf43-3501-4474-a804-45dae77dd814
+
+
+
+
+
+ ┌────────────────────────────────────────────────┬────────┐
+  │ Missing from XLS                               │ Status │
+  ├────────────────────────────────────────────────┼────────┤
+  │ C.1.3 — por tipo de contrato                   │ OK     │
+  ├────────────────────────────────────────────────┼────────┤
+  │ C.2 — grupos etários                           │ OK     │
+  ├────────────────────────────────────────────────┼────────┤
+  │ C.3 — áreas de formação (ISCED)                │ Ok     │
+  ├────────────────────────────────────────────────┼────────┤
+  │ C.4 — resultados de investigação / publicações │ Ok     │
+  ├────────────────────────────────────────────────┼────────┤
+  │ C.5 — trabalhos de conclusão orientados        │ Ok     │
+  ├────────────────────────────────────────────────┼────────┤
+  │ C.6 — pesquisas e extensão                     │ Ok     │
+  └────────────────────────────────────────────────┴───────

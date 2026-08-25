@@ -1,65 +1,66 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# deploy.sh - standardized deployment helper for docker-compose stacks
-# Usage: ./deploy.sh [branch] [--skip-migrations] [--prod]
-# Example: ./deploy.sh main --prod  (uses docker-compose.prod.yml)
-# Example: ./deploy.sh feature/yearly-rollover (uses docker-compose.yml)
+# Incremental deployment. This script never removes database volumes.
+# Usage: ./deploy.sh [branch] [--prod] [--skip-migrations]
 
-BRANCH=${1:-main}
-SKIP_MIGRATIONS=0
+BRANCH=main
 USE_PROD=0
+SKIP_MIGRATIONS=0
 
-for arg in "${@}"; do
-  if [ "$arg" = "--skip-migrations" ]; then
-    SKIP_MIGRATIONS=1
-  fi
-  if [ "$arg" = "--prod" ]; then
-    USE_PROD=1
-  fi
+for arg in "$@"; do
+  case "$arg" in
+    --prod) USE_PROD=1 ;;
+    --skip-migrations) SKIP_MIGRATIONS=1 ;;
+    -*) echo "Unknown option: $arg" >&2; exit 2 ;;
+    *) BRANCH="$arg" ;;
+  esac
 done
 
+command -v git >/dev/null || { echo "git is required" >&2; exit 1; }
+command -v docker >/dev/null || { echo "docker is required" >&2; exit 1; }
+
+COMPOSE_FILE=docker-compose.yml
 if [ "$USE_PROD" -eq 1 ]; then
-  COMPOSE_FILE="docker-compose.prod.yml"
-  echo "Using production compose file: $COMPOSE_FILE"
-else
-  COMPOSE_FILE="docker-compose.yml"
-  echo "Using standard compose file: $COMPOSE_FILE"
+  COMPOSE_FILE=docker-compose.prod.yml
+fi
+[ -f "$COMPOSE_FILE" ] || { echo "Missing $COMPOSE_FILE" >&2; exit 1; }
+
+DC=(docker compose -f "$COMPOSE_FILE")
+if [ ! -f .env ]; then
+  echo "Missing .env. Copy .env.example and configure production secrets first." >&2
+  exit 1
 fi
 
-echo "Deploying branch: ${BRANCH}"
+set -a
+source .env
+set +a
 
-# Prerequisites
-command -v git >/dev/null || { echo "git required" >&2; exit 1; }
-command -v docker >/dev/null || { echo "docker required" >&2; exit 1; }
+DB_USER="${POSTGRES_USER:-gpl_user}"
+DB_NAME="${POSTGRES_DB:-gpl_db}"
 
-DC="docker compose -f $COMPOSE_FILE"
-
-# Git fetch and checkout
-echo "Fetching and checking out ${BRANCH}..."
+echo "Deploying ${BRANCH} with ${COMPOSE_FILE}"
 git fetch --all --prune
-git checkout "${BRANCH}" 2>/dev/null || git checkout -B "${BRANCH}"
-git reset --hard "origin/${BRANCH}" 2>/dev/null || true
+git checkout "$BRANCH" 2>/dev/null || git checkout -b "$BRANCH" "origin/$BRANCH"
+git reset --hard "origin/$BRANCH"
 
-# Pull images
-echo "Pulling images..."
-$DC pull || true
+echo "Starting database..."
+"${DC[@]}" up -d postgres
+until "${DC[@]}" exec -T postgres pg_isready -U "$DB_USER" -d "$DB_NAME" >/dev/null 2>&1; do
+  sleep 2
+done
 
-# Stop stack
-echo "Stopping existing stack..."
-$DC down || true
-
-# Run migrations if not skipped
 if [ "$SKIP_MIGRATIONS" -eq 0 ]; then
-  echo "Running migrations..."
-  $DC run --rm backend bash -c "psql \"\${DATABASE_URL:-postgresql://gpl_user:gplpass@postgres:5432/gpl_db}\" -f backend/migrations/20260512_add_revoked_jtis.sql || true; psql \"\${DATABASE_URL:-postgresql://gpl_user:gplpass@postgres:5432/gpl_db}\" -f backend/migrations/20260513_add_refresh_tokens_and_mfa.sql || true" || true
+  echo "Applying schema and migrations..."
+  "${DC[@]}" exec -T postgres psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" \
+    < backend/src/models/schema.sql
+  for migration in backend/migrations/*.sql; do
+    [ -f "$migration" ] || continue
+    echo "  Applying $migration"
+    "${DC[@]}" exec -T postgres psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" < "$migration"
+  done
 fi
 
-# Start stack (rebuild images so git pull changes are included)
-echo "Building and starting stack..."
-$DC up -d --build --remove-orphans
-
-echo "Deployment complete. Use '$DC ps' to check services."
-if [ "$USE_PROD" -eq 1 ]; then
-  echo "App should be live at: https://agplurio.unilurio.ac.mz"
-fi
+echo "Building and restarting application..."
+"${DC[@]}" up -d --build --remove-orphans
+"${DC[@]}" ps

@@ -125,6 +125,13 @@ async function buildExcel(data) {
     ['cadeirante_h','Cadeirante H'],['cadeirante_m','Cadeirante M'],['visual_h','Visual H'],['visual_m','Visual M'],
     ['auditiva_h','Auditiva H'],['auditiva_m','Auditiva M'],['outros_h','Outros H'],['outros_m','Outros M'],
   ]);
+  addStudentTable('Quadro 1.7 — Outras necessidades especiais', [['curso','Curso'],['area','Área'],['subarea','Sub-área'],['regime','Regime'],['provincia','Província'],['distrito','Distrito'],['grau','Grau'],['tipo_necessidade','Tipo']], studentResults.outrasNecessidades, [['homens','Homens'],['mulheres','Mulheres']]);
+  addStudentTable('Quadro 1.8 — Por província de conclusão da 12.ª classe', [['provincia','Província']], studentResults.provinciaConclusao, statFields);
+  addStudentTable('Quadro 1.9 — Por província de naturalidade', [['provincia','Província']], studentResults.provinciaNaturalidade, statFields);
+  addStudentTable('Quadro 1.10 — Por faixa etária', [['classe_idade','Classe de idade']], studentResults.faixaEtaria, statFields);
+  addStudentTable('Quadro 1.11 — Graduados por ano da primeira matrícula', [['curso','Curso'],['area','Área'],['subarea','Sub-área'],['regime','Regime'],['provincia','Província'],['distrito','Distrito'],['grau','Grau'],['ano_primeira_matricula','Ano 1.ª matrícula']], studentResults.graduadosMatricula, [
+    ['antes_2016','Antes de 2016'],['ano_2016','2016'],['ano_2017','2017'],['ano_2018','2018'],['ano_2019','2019'],['ano_2020','2020'],['ano_2021','2021'],['ano_2022','2022'],['ano_2023','2023'],
+  ]);
 
   // ── Sheet 3: Docentes ──────────────────────────────────────────────────────
   const wsDoc = wb.addWorksheet('Docentes');

@@ -1,5 +1,5 @@
 import { Card, TableWrap, Th, Td, AddRowBtn, ErrorBanner } from '../Layout/FormComponents';
-import { emptyEstudante, emptyEstudanteVaga, emptyEstudanteCursoEstatistica, emptyEstudanteNacionalidade, emptyEstudanteEstrangeiro, emptyEstudanteNecessidade } from '../../hooks/useSubmission';
+import { emptyEstudante, emptyEstudanteVaga, emptyEstudanteCursoEstatistica, emptyEstudanteNacionalidade, emptyEstudanteEstrangeiro, emptyEstudanteNecessidade, emptyEstudanteOutraNecessidade, emptyEstudanteProvincia, emptyEstudanteFaixaEtaria, emptyEstudanteGraduadoMatricula } from '../../hooks/useSubmission';
 import { useState } from 'react';
 import { NEXT_YEAR, CURRENT_YEAR } from '../../utils/appConfig';
 import { validateEstudantes } from '../../utils/validation';
@@ -9,6 +9,7 @@ const REGIMES = ['Presencial','Distância','Misto'];
 const NACIONALIDADES = ['Moçambicana','Estrangeira'];
 const STATS_FIELDS = [['ingresso_h','Ingresso H'],['ingresso_m','Ingresso M'],['matriculado_h','Matric. H'],['matriculado_m','Matric. M'],['graduado_h','Graduado H'],['graduado_m','Graduado M']];
 const NEED_FIELDS = [['cadeirante_h','Cadeirante H'],['cadeirante_m','Cadeirante M'],['visual_h','Visual H'],['visual_m','Visual M'],['auditiva_h','Auditiva H'],['auditiva_m','Auditiva M'],['outros_h','Outros H'],['outros_m','Outros M']];
+const YEAR_FIELDS = [['antes_2016','Antes de 2016'],['ano_2016','2016'],['ano_2017','2017'],['ano_2018','2018'],['ano_2019','2019'],['ano_2020','2020'],['ano_2021','2021'],['ano_2022','2022'],['ano_2023','2023']];
 
 function StatsTable({ rows, fields, textFields, onSet, onAdd }) {
   return <><TableWrap><thead><tr>{textFields.map(([key, label]) => <Th key={key}>{label}</Th>)}{fields.map(([key, label]) => <Th key={key} center>{label}</Th>)}</tr></thead>
@@ -158,6 +159,16 @@ export default function SectionEstudantes({ data, update }) {
       <StatsTable rows={extras.estrangeiros || [emptyEstudanteEstrangeiro()]} fields={STATS_FIELDS} textFields={[['curso','Curso'],['area','Área'],['subarea','Sub-área'],['regime','Regime'],['pais','País'],['grau','Grau']]} {...editExtra('estrangeiros', emptyEstudanteEstrangeiro)} />
       <h3 style={{ marginTop: 24 }}>Quadro 1.6 – Estudantes com necessidades especiais</h3>
       <StatsTable rows={extras.necessidadesEspeciais || [emptyEstudanteNecessidade()]} fields={NEED_FIELDS} textFields={[['curso','Curso'],['area','Área'],['subarea','Sub-área'],['regime','Regime'],['provincia','Província'],['distrito','Distrito'],['grau','Grau']]} {...editExtra('necessidadesEspeciais', emptyEstudanteNecessidade)} />
+      <h3 style={{ marginTop: 24 }}>Quadro 1.7 – Outras necessidades especiais</h3>
+      <StatsTable rows={extras.outrasNecessidades || [emptyEstudanteOutraNecessidade()]} fields={[['homens','Homens'],['mulheres','Mulheres']]} textFields={[['curso','Curso'],['area','Área'],['subarea','Sub-área'],['regime','Regime'],['provincia','Província'],['distrito','Distrito'],['grau','Grau'],['tipo_necessidade','Tipo']]} {...editExtra('outrasNecessidades', emptyEstudanteOutraNecessidade)} />
+      <h3 style={{ marginTop: 24 }}>Quadro 1.8 – Por província de conclusão da 12.ª classe</h3>
+      <StatsTable rows={extras.provinciaConclusao || [emptyEstudanteProvincia()]} fields={STATS_FIELDS} textFields={[['provincia','Província']]} {...editExtra('provinciaConclusao', emptyEstudanteProvincia)} />
+      <h3 style={{ marginTop: 24 }}>Quadro 1.9 – Por província de naturalidade</h3>
+      <StatsTable rows={extras.provinciaNaturalidade || [emptyEstudanteProvincia()]} fields={STATS_FIELDS} textFields={[['provincia','Província']]} {...editExtra('provinciaNaturalidade', emptyEstudanteProvincia)} />
+      <h3 style={{ marginTop: 24 }}>Quadro 1.10 – Por faixa etária</h3>
+      <StatsTable rows={extras.faixaEtaria || [emptyEstudanteFaixaEtaria()]} fields={STATS_FIELDS} textFields={[['classe_idade','Classe de idade']]} {...editExtra('faixaEtaria', emptyEstudanteFaixaEtaria)} />
+      <h3 style={{ marginTop: 24 }}>Quadro 1.11 – Graduados por ano da primeira matrícula</h3>
+      <StatsTable rows={extras.graduadosMatricula || [emptyEstudanteGraduadoMatricula()]} fields={YEAR_FIELDS} textFields={[['curso','Curso'],['area','Área'],['subarea','Sub-área'],['regime','Regime'],['provincia','Província'],['distrito','Distrito'],['grau','Grau'],['ano_primeira_matricula','Ano 1.ª matrícula']]} {...editExtra('graduadosMatricula', emptyEstudanteGraduadoMatricula)} />
     </Card>
   );
 }

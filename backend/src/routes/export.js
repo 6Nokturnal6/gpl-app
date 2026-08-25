@@ -32,7 +32,7 @@ async function resolveUnivId(sub) {
 
 // Fetch all data for a single submission, including campus name
 async function fetchBySubmissionId(subId) {
-  const [subRes, estudantes, estudantesVagas, estudantesCursoEstatistica, estudantesNacionalidadeEstatistica, estudantesEstrangeiros, estudantesNecessidades, docentes, docentesGrupoEtario, docentesGrupoEtarioGrau, docentesAreaFormacao, docentesCursoFormacao, docentesCategoria, docentesRelacao, ctaNivelFormacao, ctaNacionalidade, ctaRelacao, ctaGrupoEtario, investigadores, financas, labs, salas, bib, comp, previsao,
+  const [subRes, estudantes, estudantesVagas, estudantesCursoEstatistica, estudantesNacionalidadeEstatistica, estudantesEstrangeiros, estudantesNecessidades, estudantesOutrasNecessidades, estudantesProvinciaConclusao, estudantesProvinciaNaturalidade, estudantesFaixaEtaria, estudantesGraduadosMatricula, docentes, docentesGrupoEtario, docentesGrupoEtarioGrau, docentesAreaFormacao, docentesCursoFormacao, docentesCategoria, docentesRelacao, ctaNivelFormacao, ctaNacionalidade, ctaRelacao, ctaGrupoEtario, investigadores, financas, labs, salas, bib, comp, previsao,
     desportoOrg, desportoPartic, culturaOrg, culturaPartic, grupos, tuna, estudantesAct,
     invGrupoEtario, invAreaFormacao, invConf, invProd, invPubsPares, invPubsDoc, invPubsTipo,
     invOrient, invPesq, invExt, invExtNivel] =
@@ -47,6 +47,11 @@ async function fetchBySubmissionId(subId) {
       db.query('SELECT * FROM estudantes_nacionalidade_estatistica WHERE submission_id=$1 ORDER BY sort_order', [subId]),
       db.query('SELECT * FROM estudantes_estrangeiros WHERE submission_id=$1 ORDER BY sort_order', [subId]),
       db.query('SELECT * FROM estudantes_necessidades_especiais WHERE submission_id=$1 ORDER BY sort_order', [subId]),
+      db.query('SELECT * FROM estudantes_outras_necessidades WHERE submission_id=$1 ORDER BY sort_order', [subId]),
+      db.query('SELECT * FROM estudantes_provincia_conclusao WHERE submission_id=$1 ORDER BY sort_order', [subId]),
+      db.query('SELECT * FROM estudantes_provincia_naturalidade WHERE submission_id=$1 ORDER BY sort_order', [subId]),
+      db.query('SELECT * FROM estudantes_faixa_etaria WHERE submission_id=$1 ORDER BY sort_order', [subId]),
+      db.query('SELECT * FROM estudantes_graduados_matricula WHERE submission_id=$1 ORDER BY sort_order', [subId]),
       db.query('SELECT * FROM docentes WHERE submission_id=$1 ORDER BY regime,sort_order', [subId]),
       db.query('SELECT * FROM docentes_grupo_etario WHERE submission_id=$1 ORDER BY sort_order', [subId]),
       db.query('SELECT * FROM docentes_grupo_etario_grau WHERE submission_id=$1 ORDER BY sort_order', [subId]),
@@ -101,6 +106,11 @@ async function fetchBySubmissionId(subId) {
       nacionalidadeEstatistica: estudantesNacionalidadeEstatistica.rows,
       estrangeiros: estudantesEstrangeiros.rows,
       necessidadesEspeciais: estudantesNecessidades.rows,
+      outrasNecessidades: estudantesOutrasNecessidades.rows,
+      provinciaConclusao: estudantesProvinciaConclusao.rows,
+      provinciaNaturalidade: estudantesProvinciaNaturalidade.rows,
+      faixaEtaria: estudantesFaixaEtaria.rows,
+      graduadosMatricula: estudantesGraduadosMatricula.rows,
     },
     docentes: docentes.rows,
     docentesResultados: {
@@ -201,7 +211,7 @@ async function fetchUniversityData(universityId) {
     };
   }
 
-  const [estudantes, estudantesVagas, estudantesCursoEstatistica, estudantesNacionalidadeEstatistica, estudantesEstrangeiros, estudantesNecessidades, docentes, docentesGrupoEtario, docentesGrupoEtarioGrau, docentesAreaFormacao, docentesCursoFormacao, docentesCategoria, docentesRelacao, ctaNivelFormacao, ctaNacionalidade, ctaRelacao, ctaGrupoEtario, investigadores, financas, labs, salas, bib, comp, previsao,
+  const [estudantes, estudantesVagas, estudantesCursoEstatistica, estudantesNacionalidadeEstatistica, estudantesEstrangeiros, estudantesNecessidades, estudantesOutrasNecessidades, estudantesProvinciaConclusao, estudantesProvinciaNaturalidade, estudantesFaixaEtaria, estudantesGraduadosMatricula, docentes, docentesGrupoEtario, docentesGrupoEtarioGrau, docentesAreaFormacao, docentesCursoFormacao, docentesCategoria, docentesRelacao, ctaNivelFormacao, ctaNacionalidade, ctaRelacao, ctaGrupoEtario, investigadores, financas, labs, salas, bib, comp, previsao,
     desportoOrg, desportoPartic, culturaOrg, culturaPartic, grupos, tuna, estudantesAct,
     invGrupoEtario, invAreaFormacao, invConf, invProd, invPubsPares, invPubsDoc, invPubsTipo,
     invOrient, invPesq, invExt, invExtNivel] = await Promise.all([
@@ -211,6 +221,11 @@ async function fetchUniversityData(universityId) {
     db.query('SELECT * FROM estudantes_nacionalidade_estatistica WHERE submission_id = ANY($1::uuid[]) ORDER BY sort_order', [subIds]),
     db.query('SELECT * FROM estudantes_estrangeiros WHERE submission_id = ANY($1::uuid[]) ORDER BY sort_order', [subIds]),
     db.query('SELECT * FROM estudantes_necessidades_especiais WHERE submission_id = ANY($1::uuid[]) ORDER BY sort_order', [subIds]),
+    db.query('SELECT * FROM estudantes_outras_necessidades WHERE submission_id = ANY($1::uuid[]) ORDER BY sort_order', [subIds]),
+    db.query('SELECT * FROM estudantes_provincia_conclusao WHERE submission_id = ANY($1::uuid[]) ORDER BY sort_order', [subIds]),
+    db.query('SELECT * FROM estudantes_provincia_naturalidade WHERE submission_id = ANY($1::uuid[]) ORDER BY sort_order', [subIds]),
+    db.query('SELECT * FROM estudantes_faixa_etaria WHERE submission_id = ANY($1::uuid[]) ORDER BY sort_order', [subIds]),
+    db.query('SELECT * FROM estudantes_graduados_matricula WHERE submission_id = ANY($1::uuid[]) ORDER BY sort_order', [subIds]),
     db.query('SELECT * FROM docentes WHERE submission_id = ANY($1::uuid[]) ORDER BY regime,sort_order', [subIds]),
     db.query('SELECT * FROM docentes_grupo_etario WHERE submission_id = ANY($1::uuid[]) ORDER BY sort_order', [subIds]),
     db.query('SELECT * FROM docentes_grupo_etario_grau WHERE submission_id = ANY($1::uuid[]) ORDER BY sort_order', [subIds]),
@@ -276,6 +291,11 @@ async function fetchUniversityData(universityId) {
       nacionalidadeEstatistica: estudantesNacionalidadeEstatistica.rows,
       estrangeiros: estudantesEstrangeiros.rows,
       necessidadesEspeciais: estudantesNecessidades.rows,
+      outrasNecessidades: estudantesOutrasNecessidades.rows,
+      provinciaConclusao: estudantesProvinciaConclusao.rows,
+      provinciaNaturalidade: estudantesProvinciaNaturalidade.rows,
+      faixaEtaria: estudantesFaixaEtaria.rows,
+      graduadosMatricula: estudantesGraduadosMatricula.rows,
     },
     docentes: docentes.rows,
     docentesResultados: {

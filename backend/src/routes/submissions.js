@@ -47,7 +47,7 @@ router.get('/current', async (req, res, next) => {
       univIdIes = r.rows[0] || null;
     }
 
-    const [estudantes, estudantesVagas, estudantesCursoEstatistica, estudantesNacionalidadeEstatistica, estudantesEstrangeiros, estudantesNecessidades, docentes, docentesGrupoEtario, docentesGrupoEtarioGrau, docentesAreaFormacao, docentesCursoFormacao, docentesCategoria, docentesRelacao, ctaNivelFormacao, ctaNacionalidade, ctaRelacao, ctaGrupoEtario, investigadores, financas, labs, salas, bib, comp, previsao, desportoOrg, desportoPartic, culturaOrg, culturaPartic, grupos, tuna, estudantesAct, invGrupoEtario, invAreaFormacao, invConf, invProd, invPubsPares, invPubsDoc, invPubsTipo, invOrient, invPesq, invExt, invExtNivel, locks] =
+    const [estudantes, estudantesVagas, estudantesCursoEstatistica, estudantesNacionalidadeEstatistica, estudantesEstrangeiros, estudantesNecessidades, estudantesOutrasNecessidades, estudantesProvinciaConclusao, estudantesProvinciaNaturalidade, estudantesFaixaEtaria, estudantesGraduadosMatricula, docentes, docentesGrupoEtario, docentesGrupoEtarioGrau, docentesAreaFormacao, docentesCursoFormacao, docentesCategoria, docentesRelacao, ctaNivelFormacao, ctaNacionalidade, ctaRelacao, ctaGrupoEtario, investigadores, financas, labs, salas, bib, comp, previsao, desportoOrg, desportoPartic, culturaOrg, culturaPartic, grupos, tuna, estudantesAct, invGrupoEtario, invAreaFormacao, invConf, invProd, invPubsPares, invPubsDoc, invPubsTipo, invOrient, invPesq, invExt, invExtNivel, locks] =
       await Promise.all([
         db.query('SELECT * FROM estudantes WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
         db.query('SELECT * FROM estudantes_vagas WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
@@ -55,6 +55,11 @@ router.get('/current', async (req, res, next) => {
         db.query('SELECT * FROM estudantes_nacionalidade_estatistica WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
         db.query('SELECT * FROM estudantes_estrangeiros WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
         db.query('SELECT * FROM estudantes_necessidades_especiais WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM estudantes_outras_necessidades WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM estudantes_provincia_conclusao WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM estudantes_provincia_naturalidade WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM estudantes_faixa_etaria WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM estudantes_graduados_matricula WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
         db.query('SELECT * FROM docentes WHERE submission_id=$1 ORDER BY regime,sort_order', [sub.id]),
         db.query('SELECT * FROM docentes_grupo_etario WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
         db.query('SELECT * FROM docentes_grupo_etario_grau WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
@@ -104,6 +109,11 @@ router.get('/current', async (req, res, next) => {
         nacionalidadeEstatistica: estudantesNacionalidadeEstatistica.rows,
         estrangeiros: estudantesEstrangeiros.rows,
         necessidadesEspeciais: estudantesNecessidades.rows,
+        outrasNecessidades: estudantesOutrasNecessidades.rows,
+        provinciaConclusao: estudantesProvinciaConclusao.rows,
+        provinciaNaturalidade: estudantesProvinciaNaturalidade.rows,
+        faixaEtaria: estudantesFaixaEtaria.rows,
+        graduadosMatricula: estudantesGraduadosMatricula.rows,
       },
       docentes: docentes.rows,
       docentesResultados: {
@@ -229,6 +239,16 @@ router.put('/estudantes/resultados', async (req, res, next) => {
       'submission_id,curso,area,subarea,regime,provincia,distrito,grau,cadeirante_h,cadeirante_m,visual_h,visual_m,auditiva_h,auditiva_m,outros_h,outros_m,sort_order',
       d.necessidadesEspeciais || [], (r, i) => [sub.id, r.curso, r.area, r.subarea, r.regime, r.provincia, r.distrito, r.grau,
         r.cadeirante_h || 0, r.cadeirante_m || 0, r.visual_h || 0, r.visual_m || 0, r.auditiva_h || 0, r.auditiva_m || 0, r.outros_h || 0, r.outros_m || 0, i]);
+    if (Array.isArray(d.outrasNecessidades)) await saveRows(sub.id, 'estudantes_outras_necessidades',
+      'submission_id,curso,area,subarea,regime,provincia,distrito,grau,tipo_necessidade,homens,mulheres,sort_order',
+      d.outrasNecessidades, (r, i) => [sub.id, r.curso, r.area, r.subarea, r.regime, r.provincia, r.distrito, r.grau, r.tipo_necessidade, r.homens || 0, r.mulheres || 0, i]);
+    const saveSimpleStats = async (table, fields, rows, values) => {
+      if (Array.isArray(rows)) await saveRows(sub.id, table, fields, rows, values);
+    };
+    await saveSimpleStats('estudantes_provincia_conclusao', 'submission_id,provincia,ingresso_h,ingresso_m,matriculado_h,matriculado_m,graduado_h,graduado_m,sort_order', d.provinciaConclusao, (r,i) => [sub.id,r.provincia||'',r.ingresso_h||0,r.ingresso_m||0,r.matriculado_h||0,r.matriculado_m||0,r.graduado_h||0,r.graduado_m||0,i]);
+    await saveSimpleStats('estudantes_provincia_naturalidade', 'submission_id,provincia,ingresso_h,ingresso_m,matriculado_h,matriculado_m,graduado_h,graduado_m,sort_order', d.provinciaNaturalidade, (r,i) => [sub.id,r.provincia||'',r.ingresso_h||0,r.ingresso_m||0,r.matriculado_h||0,r.matriculado_m||0,r.graduado_h||0,r.graduado_m||0,i]);
+    await saveSimpleStats('estudantes_faixa_etaria', 'submission_id,classe_idade,ingresso_h,ingresso_m,matriculado_h,matriculado_m,graduado_h,graduado_m,sort_order', d.faixaEtaria, (r,i) => [sub.id,r.classe_idade||'',r.ingresso_h||0,r.ingresso_m||0,r.matriculado_h||0,r.matriculado_m||0,r.graduado_h||0,r.graduado_m||0,i]);
+    await saveSimpleStats('estudantes_graduados_matricula', 'submission_id,curso,area,subarea,regime,provincia,distrito,grau,ano_primeira_matricula,antes_2016,ano_2016,ano_2017,ano_2018,ano_2019,ano_2020,ano_2021,ano_2022,ano_2023,sort_order', d.graduadosMatricula, (r,i) => [sub.id,r.curso,r.area,r.subarea,r.regime,r.provincia,r.distrito,r.grau,r.ano_primeira_matricula,r.antes_2016||0,r.ano_2016||0,r.ano_2017||0,r.ano_2018||0,r.ano_2019||0,r.ano_2020||0,r.ano_2021||0,r.ano_2022||0,r.ano_2023||0,i]);
     res.json({ ok: true });
   } catch (err) { next(err); }
 });

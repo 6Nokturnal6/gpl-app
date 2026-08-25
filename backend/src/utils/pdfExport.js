@@ -222,6 +222,13 @@ function buildPdfBuffer(data) {
       ['cadeirante_h','Cad.H'],['cadeirante_m','Cad.M'],['visual_h','Vis.H'],['visual_m','Vis.M'],
       ['auditiva_h','Aud.H'],['auditiva_m','Aud.M'],['outros_h','Out.H'],['outros_m','Out.M'],
     ]);
+    addStudentTable('Quadro 1.7 — Outras necessidades especiais', [['curso','Curso',48],['area','Área',28],['subarea','Sub-área',28],['regime','Regime',32],['provincia','Prov.',30],['distrito','Dist.',30],['grau','Grau',38],['tipo_necessidade','Tipo',55]], studentResults.outrasNecessidades, [['homens','H'],['mulheres','M']]);
+    addStudentTable('Quadro 1.8 — Por província de conclusão da 12.ª classe', [['provincia','Província',100]], studentResults.provinciaConclusao, statKeys);
+    addStudentTable('Quadro 1.9 — Por província de naturalidade', [['provincia','Província',100]], studentResults.provinciaNaturalidade, statKeys);
+    addStudentTable('Quadro 1.10 — Por faixa etária', [['classe_idade','Classe de idade',100]], studentResults.faixaEtaria, statKeys);
+    addStudentTable('Quadro 1.11 — Graduados por ano da primeira matrícula', [['curso','Curso',48],['area','Área',28],['subarea','Sub-área',28],['regime','Regime',32],['provincia','Prov.',30],['distrito','Dist.',30],['grau','Grau',38],['ano_primeira_matricula','Ano 1.ª matr.',50]], studentResults.graduadosMatricula, [
+      ['antes_2016','<2016'],['ano_2016','2016'],['ano_2017','2017'],['ano_2018','2018'],['ano_2019','2019'],['ano_2020','2020'],['ano_2021','2021'],['ano_2022','2022'],['ano_2023','2023'],
+    ]);
 
     // Docentes
     startNewSection('A. Corpo Docente — ' + YEAR);

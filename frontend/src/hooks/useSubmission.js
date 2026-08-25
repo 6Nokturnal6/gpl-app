@@ -182,6 +182,10 @@ export const emptyEstudanteCursoEstatistica = () => ({ curso:'', duracao:'', are
 export const emptyEstudanteNacionalidade = () => ({ nacionalidade:'Moçambicana', ingresso_h:0, ingresso_m:0, matriculado_h:0, matriculado_m:0, graduado_h:0, graduado_m:0 });
 export const emptyEstudanteEstrangeiro = () => ({ curso:'', area:'', subarea:'', regime:'Presencial', pais:'', grau:'Licenciatura', ingresso_h:0, ingresso_m:0, matriculado_h:0, matriculado_m:0, graduado_h:0, graduado_m:0 });
 export const emptyEstudanteNecessidade = () => ({ curso:'', area:'', subarea:'', regime:'Presencial', provincia:'', distrito:'', grau:'Licenciatura', cadeirante_h:0, cadeirante_m:0, visual_h:0, visual_m:0, auditiva_h:0, auditiva_m:0, outros_h:0, outros_m:0 });
+export const emptyEstudanteOutraNecessidade = () => ({ curso:'', area:'', subarea:'', regime:'Presencial', provincia:'', distrito:'', grau:'Licenciatura', tipo_necessidade:'', homens:0, mulheres:0 });
+export const emptyEstudanteProvincia = () => ({ provincia:'', ingresso_h:0, ingresso_m:0, matriculado_h:0, matriculado_m:0, graduado_h:0, graduado_m:0 });
+export const emptyEstudanteFaixaEtaria = () => ({ classe_idade:'', ingresso_h:0, ingresso_m:0, matriculado_h:0, matriculado_m:0, graduado_h:0, graduado_m:0 });
+export const emptyEstudanteGraduadoMatricula = () => ({ curso:'', area:'', subarea:'', regime:'Presencial', provincia:'', distrito:'', grau:'Licenciatura', ano_primeira_matricula:'', antes_2016:0, ano_2016:0, ano_2017:0, ano_2018:0, ano_2019:0, ano_2020:0, ano_2021:0, ano_2022:0, ano_2023:0 });
 export const emptyDocente = (regime) => ({ regime,provincia:'',distrito:'',nacionalidade:'Moçambicana',lic_h:0,lic_m:0,mest_h:0,mest_m:0,dout_h:0,dout_m:0,pos_h:0,pos_m:0 });
 export const emptyDegreeRow = (label) => ({ [label]:'', lic_h:0, lic_m:0, mest_h:0, mest_m:0, dout_h:0, dout_m:0, pos_h:0, pos_m:0 });
 export const emptyAgeDocente = () => ({ classe_idade:'', moz_ti_h:0, moz_ti_m:0, moz_tp_h:0, moz_tp_m:0, estr_ti_h:0, estr_ti_m:0, estr_tp_h:0, estr_tp_m:0 });

@@ -49,6 +49,8 @@ function computePrevisao(data) {
   const computadores = data.infra?.computadores || [];
   const prev = data.previsao || [];
   const cult = data.cultura || {};
+  const docRes = data.docentesResultados || {};
+  const cta = data.cta || {};
 
   // 1. Students by degree (actual year)
   const byGrau = {};
@@ -177,6 +179,17 @@ function computePrevisao(data) {
       culturaCulturaOrgCount,
       culturaCulturaPartCount,
       culturaGruposCount,
+    },
+    docentesQuadros: {
+      a2GrupoEtario: (docRes.grupoEtario || []).length,
+      a3AreaFormacao: (docRes.areaFormacao || []).length,
+      a4CursoFormacao: (docRes.cursoFormacao || []).length,
+      a5Categoria: (docRes.categoria || []).length,
+      a6Relacao: (docRes.relacao || []).length,
+      ctaB1Nivel: (cta.nivelFormacao || []).length,
+      ctaB2Nacionalidade: (cta.nacionalidade || []).length,
+      ctaB3Relacao: (cta.relacao || []).length,
+      ctaB4GrupoEtario: (cta.grupoEtario || []).length,
     },
   };
 }

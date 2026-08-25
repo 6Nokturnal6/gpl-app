@@ -88,6 +88,114 @@ CREATE TABLE IF NOT EXISTS docentes (
 ALTER TABLE docentes ADD COLUMN IF NOT EXISTS pos_h INTEGER DEFAULT 0;
 ALTER TABLE docentes ADD COLUMN IF NOT EXISTS pos_m INTEGER DEFAULT 0;
 
+-- Docentes: quadros A2-A7 da folha "Docentes"
+CREATE TABLE IF NOT EXISTS docentes_grupo_etario (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  classe_idade TEXT NOT NULL,
+  moz_ti_h INTEGER DEFAULT 0, moz_ti_m INTEGER DEFAULT 0,
+  moz_tp_h INTEGER DEFAULT 0, moz_tp_m INTEGER DEFAULT 0,
+  estr_ti_h INTEGER DEFAULT 0, estr_ti_m INTEGER DEFAULT 0,
+  estr_tp_h INTEGER DEFAULT 0, estr_tp_m INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS docentes_area_formacao (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  area_formacao TEXT NOT NULL,
+  lic_h INTEGER DEFAULT 0, lic_m INTEGER DEFAULT 0,
+  mest_h INTEGER DEFAULT 0, mest_m INTEGER DEFAULT 0,
+  dout_h INTEGER DEFAULT 0, dout_m INTEGER DEFAULT 0,
+  pos_h INTEGER DEFAULT 0, pos_m INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS docentes_curso_formacao (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  curso_formacao TEXT NOT NULL,
+  lic_h INTEGER DEFAULT 0, lic_m INTEGER DEFAULT 0,
+  mest_h INTEGER DEFAULT 0, mest_m INTEGER DEFAULT 0,
+  dout_h INTEGER DEFAULT 0, dout_m INTEGER DEFAULT 0,
+  pos_h INTEGER DEFAULT 0, pos_m INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS docentes_categoria (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  regime TEXT NOT NULL,
+  categoria TEXT NOT NULL,
+  homens INTEGER DEFAULT 0, mulheres INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS docentes_relacao (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  relacao TEXT NOT NULL,
+  lic_h INTEGER DEFAULT 0, lic_m INTEGER DEFAULT 0,
+  mest_h INTEGER DEFAULT 0, mest_m INTEGER DEFAULT 0,
+  dout_h INTEGER DEFAULT 0, dout_m INTEGER DEFAULT 0,
+  pos_h INTEGER DEFAULT 0, pos_m INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0
+);
+
+-- CTA: quadros B1-B4 da folha "Docentes"
+CREATE TABLE IF NOT EXISTS cta_nivel_formacao (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  regime TEXT NOT NULL,
+  ensino_primario_h INTEGER DEFAULT 0, ensino_primario_m INTEGER DEFAULT 0,
+  secundario_1_h INTEGER DEFAULT 0, secundario_1_m INTEGER DEFAULT 0,
+  secundario_2_h INTEGER DEFAULT 0, secundario_2_m INTEGER DEFAULT 0,
+  bacharel_h INTEGER DEFAULT 0, bacharel_m INTEGER DEFAULT 0,
+  lic_h INTEGER DEFAULT 0, lic_m INTEGER DEFAULT 0,
+  mest_h INTEGER DEFAULT 0, mest_m INTEGER DEFAULT 0,
+  dout_h INTEGER DEFAULT 0, dout_m INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS cta_nacionalidade (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  nacionalidade TEXT NOT NULL,
+  ensino_primario_h INTEGER DEFAULT 0, ensino_primario_m INTEGER DEFAULT 0,
+  secundario_1_h INTEGER DEFAULT 0, secundario_1_m INTEGER DEFAULT 0,
+  secundario_2_h INTEGER DEFAULT 0, secundario_2_m INTEGER DEFAULT 0,
+  bacharel_h INTEGER DEFAULT 0, bacharel_m INTEGER DEFAULT 0,
+  lic_h INTEGER DEFAULT 0, lic_m INTEGER DEFAULT 0,
+  mest_h INTEGER DEFAULT 0, mest_m INTEGER DEFAULT 0,
+  dout_h INTEGER DEFAULT 0, dout_m INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS cta_relacao (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  relacao TEXT NOT NULL,
+  ensino_primario_h INTEGER DEFAULT 0, ensino_primario_m INTEGER DEFAULT 0,
+  secundario_1_h INTEGER DEFAULT 0, secundario_1_m INTEGER DEFAULT 0,
+  secundario_2_h INTEGER DEFAULT 0, secundario_2_m INTEGER DEFAULT 0,
+  bacharel_h INTEGER DEFAULT 0, bacharel_m INTEGER DEFAULT 0,
+  lic_h INTEGER DEFAULT 0, lic_m INTEGER DEFAULT 0,
+  mest_h INTEGER DEFAULT 0, mest_m INTEGER DEFAULT 0,
+  dout_h INTEGER DEFAULT 0, dout_m INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS cta_grupo_etario (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+  classe_idade TEXT NOT NULL,
+  moz_ti_h INTEGER DEFAULT 0, moz_ti_m INTEGER DEFAULT 0,
+  moz_tp_h INTEGER DEFAULT 0, moz_tp_m INTEGER DEFAULT 0,
+  estr_ti_h INTEGER DEFAULT 0, estr_ti_m INTEGER DEFAULT 0,
+  estr_tp_h INTEGER DEFAULT 0, estr_tp_m INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0
+);
+
 CREATE TABLE IF NOT EXISTS investigadores (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   submission_id UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,

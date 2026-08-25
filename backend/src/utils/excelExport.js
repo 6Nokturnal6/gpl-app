@@ -109,6 +109,30 @@ async function buildExcel(data) {
       row.eachCell(c => { c.style = cellStyle(); });
     });
   });
+  const docExtra = data.docentesResultados || {};
+  const cta = data.cta || {};
+  const docDegreeFields = [
+    ['lic_h','Lic. H'],['lic_m','Lic. M'],['mest_h','Mest. H'],['mest_m','Mest. M'],
+    ['dout_h','Dout. H'],['dout_m','Dout. M'],['pos_h','Pós-G. H'],['pos_m','Pós-G. M'],
+  ];
+  const addExtraTable = (title, label, rows, fields) => {
+    wsDoc.addRow([]);
+    wsDoc.addRow([title]).getCell(1).style = { font: { bold: true, size: 10 } };
+    const h = wsDoc.addRow([label, ...fields.map(([, name]) => name)]);
+    h.eachCell(c => { c.style = headerStyle(); });
+    (rows || []).forEach((r) => {
+      const row = wsDoc.addRow([r[label === 'Área de formação' ? 'area_formacao' : label === 'Curso de formação' ? 'curso_formacao' : label === 'Relação' ? 'relacao' : label, ...fields.map(([key]) => r[key] || 0)]);
+      row.eachCell(c => { c.style = cellStyle(); });
+    });
+  };
+  addExtraTable('A3 — Área de formação', 'Área de formação', docExtra.areaFormacao, docDegreeFields);
+  addExtraTable('A4 — Curso de formação', 'Curso de formação', docExtra.cursoFormacao, docDegreeFields);
+  addExtraTable('A6 — Relação contratual', 'Relação', docExtra.relacao, docDegreeFields);
+  addExtraTable('B2 — CTA por nacionalidade', 'nacionalidade', cta.nacionalidade, [
+    ['ensino_primario_h','Prim. H'],['ensino_primario_m','Prim. M'],['secundario_1_h','Sec.1 H'],['secundario_1_m','Sec.1 M'],
+    ['secundario_2_h','Sec.2 H'],['secundario_2_m','Sec.2 M'],['bacharel_h','Bach. H'],['bacharel_m','Bach. M'],
+    ['lic_h','Lic. H'],['lic_m','Lic. M'],['mest_h','Mest. H'],['mest_m','Mest. M'],['dout_h','Dout. H'],['dout_m','Dout. M'],
+  ]);
 
   // ── Sheet 4: Investigadores ────────────────────────────────────────────────
   const { computeC13 } = require('./investigadoresStats');
@@ -482,6 +506,8 @@ async function buildExcel(data) {
   addSumRow(['Tempo Inteiro',summary.docentes.ti.h,summary.docentes.ti.m,summary.docentes.ti.h+summary.docentes.ti.m,'','',''],false);
   addSumRow(['Tempo Parcial',summary.docentes.tp.h,summary.docentes.tp.m,summary.docentes.tp.h+summary.docentes.tp.m,'','',''],true);
   addSumRow(['TOTAL',summary.docentes.total.h,summary.docentes.total.m,summary.docentes.total.h+summary.docentes.total.m,'','',''],false,true);
+  addSumRow(['Quadros adicionais A2-A6', Object.values(summary.docentesQuadros || {}).slice(0, 5).reduce((a, v) => a + v, 0), '', '', '', '', ''], false);
+  addSumRow(['Quadros CTA B1-B4', Object.values(summary.docentesQuadros || {}).slice(5).reduce((a, v) => a + v, 0), '', '', '', '', ''], true);
   wsSum.addRow([]);
 
   // Researchers

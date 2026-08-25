@@ -47,6 +47,7 @@ export function useSubmission() {
           idies: r.data.idies || {},          // university-level ID IES
           estudantes: r.data.estudantes?.length ? r.data.estudantes : [emptyEstudante()],
           docentes: r.data.docentes?.length ? r.data.docentes : [emptyDocente('tempo_inteiro')],
+          docentesResultados: { ...emptyDocentesResultados(), ...(r.data.docentesResultados || {}), cta: { ...emptyCta(), ...(r.data.cta || {}) } },
           investigadores: r.data.investigadores?.length ? r.data.investigadores : [emptyInvestigador('tempo_inteiro')],
           investigadoresGrupoEtario: ensureGrupoEtario(r.data.investigadoresGrupoEtario),
           investigadoresAreaFormacao: ensureAreaFormacao(r.data.investigadoresAreaFormacao),
@@ -79,6 +80,7 @@ export function useSubmission() {
     idies: submissionApi.saveIdIes,
     estudantes: submissionApi.saveEstudantes,
     docentes: submissionApi.saveDocentes,
+    docentesResultados: submissionApi.saveDocentesResultados,
     investigadores: submissionApi.saveInvestigadores,
     investigadoresGrupoEtario: submissionApi.saveInvestigadoresGrupoEtario,
     investigadoresAreaFormacao: submissionApi.saveInvestigadoresAreaFormacao,
@@ -172,6 +174,10 @@ export function useSubmission() {
 
 export const emptyEstudante = () => ({ curso:'',duracao:'',area:'',subarea:'',regime:'Presencial',nacionalidade:'Moçambicana',provincia:'',distrito:'',grau:'Licenciatura',homens:0,mulheres:0 });
 export const emptyDocente = (regime) => ({ regime,provincia:'',distrito:'',nacionalidade:'Moçambicana',lic_h:0,lic_m:0,mest_h:0,mest_m:0,dout_h:0,dout_m:0,pos_h:0,pos_m:0 });
+export const emptyDegreeRow = (label) => ({ [label]:'', lic_h:0, lic_m:0, mest_h:0, mest_m:0, dout_h:0, dout_m:0, pos_h:0, pos_m:0 });
+export const emptyAgeDocente = () => ({ classe_idade:'', moz_ti_h:0, moz_ti_m:0, moz_tp_h:0, moz_tp_m:0, estr_ti_h:0, estr_ti_m:0, estr_tp_h:0, estr_tp_m:0 });
+export const emptyDocentesResultados = () => ({ grupoEtario: [emptyAgeDocente()], areaFormacao: [emptyDegreeRow('area_formacao')], cursoFormacao: [emptyDegreeRow('curso_formacao')], categoria: [{ regime:'tempo_inteiro', categoria:'', homens:0, mulheres:0 }], relacao: [emptyDegreeRow('relacao')] });
+export const emptyCta = () => ({ nivelFormacao: [{ regime:'tempo_inteiro', ensino_primario_h:0, ensino_primario_m:0, secundario_1_h:0, secundario_1_m:0, secundario_2_h:0, secundario_2_m:0, bacharel_h:0, bacharel_m:0, lic_h:0, lic_m:0, mest_h:0, mest_m:0, dout_h:0, dout_m:0 }], nacionalidade: [{ nacionalidade:'Moçambicana' }], relacao: [{ relacao:'' }], grupoEtario: [emptyAgeDocente()] });
 export const emptyInvestigador = (regime) => ({ regime,nacionalidade:'Moçambicana',lic_h:0,lic_m:0,mest_h:0,mest_m:0,dout_h:0,dout_m:0,pos_h:0,pos_m:0 });
 export const emptyFinancas = () => ({ oge:0,doacoes:0,creditos:0,proprias:0,func_ensino:0,func_investig:0,func_admin:0,sal_docentes:0,sal_tecnicos:0,sal_outros:0 });
 export const emptyLab = () => ({ nome:'',area:'',subarea:'',provincia:'',distrito:'',num_labs:0 });

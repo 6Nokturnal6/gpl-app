@@ -59,7 +59,7 @@ router.get('/submissions', async (req, res, next) => {
 router.get('/submissions/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const [sub, idies, estudantes, docentes, investigadores, invGrupoEtario, invAreaFormacao,
+    const [sub, idies, estudantes, docentes, docentesGrupoEtario, docentesAreaFormacao, docentesCursoFormacao, docentesCategoria, docentesRelacao, ctaNivelFormacao, ctaNacionalidade, ctaRelacao, ctaGrupoEtario, investigadores, invGrupoEtario, invAreaFormacao,
       invConf, invProd, invPubsPares, invPubsDoc, invPubsTipo, invOrient, invPesq, invExt, invExtNivel,
       financas, labs, salas, bib, comp, previsao,
       desportoOrg, desportoPartic, culturaOrg, culturaPartic, grupos, tuna, estudantesAct] =
@@ -68,6 +68,15 @@ router.get('/submissions/:id', async (req, res, next) => {
         db.query('SELECT * FROM id_ies WHERE submission_id=$1', [id]),
         db.query('SELECT * FROM estudantes WHERE submission_id=$1 ORDER BY sort_order', [id]),
         db.query('SELECT * FROM docentes WHERE submission_id=$1 ORDER BY regime,sort_order', [id]),
+        db.query('SELECT * FROM docentes_grupo_etario WHERE submission_id=$1 ORDER BY sort_order', [id]),
+        db.query('SELECT * FROM docentes_area_formacao WHERE submission_id=$1 ORDER BY sort_order', [id]),
+        db.query('SELECT * FROM docentes_curso_formacao WHERE submission_id=$1 ORDER BY sort_order', [id]),
+        db.query('SELECT * FROM docentes_categoria WHERE submission_id=$1 ORDER BY regime,sort_order', [id]),
+        db.query('SELECT * FROM docentes_relacao WHERE submission_id=$1 ORDER BY sort_order', [id]),
+        db.query('SELECT * FROM cta_nivel_formacao WHERE submission_id=$1 ORDER BY regime,sort_order', [id]),
+        db.query('SELECT * FROM cta_nacionalidade WHERE submission_id=$1 ORDER BY sort_order', [id]),
+        db.query('SELECT * FROM cta_relacao WHERE submission_id=$1 ORDER BY sort_order', [id]),
+        db.query('SELECT * FROM cta_grupo_etario WHERE submission_id=$1 ORDER BY sort_order', [id]),
         db.query('SELECT * FROM investigadores WHERE submission_id=$1 ORDER BY regime,sort_order', [id]),
         db.query('SELECT * FROM investigadores_grupo_etario WHERE submission_id=$1 ORDER BY regime,sort_order', [id]),
         db.query('SELECT * FROM investigadores_area_formacao WHERE submission_id=$1 ORDER BY regime,sort_order', [id]),
@@ -100,6 +109,19 @@ router.get('/submissions/:id', async (req, res, next) => {
       idies: idies.rows[0] || null,
       estudantes: estudantes.rows,
       docentes: docentes.rows,
+      docentesResultados: {
+        grupoEtario: docentesGrupoEtario.rows,
+        areaFormacao: docentesAreaFormacao.rows,
+        cursoFormacao: docentesCursoFormacao.rows,
+        categoria: docentesCategoria.rows,
+        relacao: docentesRelacao.rows,
+      },
+      cta: {
+        nivelFormacao: ctaNivelFormacao.rows,
+        nacionalidade: ctaNacionalidade.rows,
+        relacao: ctaRelacao.rows,
+        grupoEtario: ctaGrupoEtario.rows,
+      },
       investigadores: investigadores.rows,
       investigadoresGrupoEtario: invGrupoEtario.rows,
       investigadoresAreaFormacao: invAreaFormacao.rows,

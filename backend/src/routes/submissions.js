@@ -47,10 +47,19 @@ router.get('/current', async (req, res, next) => {
       univIdIes = r.rows[0] || null;
     }
 
-    const [estudantes, docentes, investigadores, financas, labs, salas, bib, comp, previsao, desportoOrg, desportoPartic, culturaOrg, culturaPartic, grupos, tuna, estudantesAct, invGrupoEtario, invAreaFormacao, invConf, invProd, invPubsPares, invPubsDoc, invPubsTipo, invOrient, invPesq, invExt, invExtNivel, locks] =
+    const [estudantes, docentes, docentesGrupoEtario, docentesAreaFormacao, docentesCursoFormacao, docentesCategoria, docentesRelacao, ctaNivelFormacao, ctaNacionalidade, ctaRelacao, ctaGrupoEtario, investigadores, financas, labs, salas, bib, comp, previsao, desportoOrg, desportoPartic, culturaOrg, culturaPartic, grupos, tuna, estudantesAct, invGrupoEtario, invAreaFormacao, invConf, invProd, invPubsPares, invPubsDoc, invPubsTipo, invOrient, invPesq, invExt, invExtNivel, locks] =
       await Promise.all([
         db.query('SELECT * FROM estudantes WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
         db.query('SELECT * FROM docentes WHERE submission_id=$1 ORDER BY regime,sort_order', [sub.id]),
+        db.query('SELECT * FROM docentes_grupo_etario WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM docentes_area_formacao WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM docentes_curso_formacao WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM docentes_categoria WHERE submission_id=$1 ORDER BY regime,sort_order', [sub.id]),
+        db.query('SELECT * FROM docentes_relacao WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM cta_nivel_formacao WHERE submission_id=$1 ORDER BY regime,sort_order', [sub.id]),
+        db.query('SELECT * FROM cta_nacionalidade WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM cta_relacao WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
+        db.query('SELECT * FROM cta_grupo_etario WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
         db.query('SELECT * FROM investigadores WHERE submission_id=$1 ORDER BY regime,sort_order', [sub.id]),
         db.query('SELECT * FROM financas WHERE submission_id=$1', [sub.id]),
         db.query('SELECT * FROM infra_labs WHERE submission_id=$1 ORDER BY sort_order', [sub.id]),
@@ -84,6 +93,19 @@ router.get('/current', async (req, res, next) => {
       idies: univIdIes,          // university-level, read-only for chefes
       estudantes: estudantes.rows,
       docentes: docentes.rows,
+      docentesResultados: {
+        grupoEtario: docentesGrupoEtario.rows,
+        areaFormacao: docentesAreaFormacao.rows,
+        cursoFormacao: docentesCursoFormacao.rows,
+        categoria: docentesCategoria.rows,
+        relacao: docentesRelacao.rows,
+      },
+      cta: {
+        nivelFormacao: ctaNivelFormacao.rows,
+        nacionalidade: ctaNacionalidade.rows,
+        relacao: ctaRelacao.rows,
+        grupoEtario: ctaGrupoEtario.rows,
+      },
       investigadores: investigadores.rows,
       investigadoresGrupoEtario: invGrupoEtario.rows,
       investigadoresAreaFormacao: invAreaFormacao.rows,
@@ -178,6 +200,39 @@ router.put('/docentes', async (req, res, next) => {
     await saveRows(sub.id, 'docentes',
       'submission_id,regime,provincia,distrito,nacionalidade,lic_h,lic_m,mest_h,mest_m,dout_h,dout_m,pos_h,pos_m,sort_order',
       rows, (r,i) => [sub.id,r.regime,r.provincia,r.distrito,r.nacionalidade,r.lic_h||0,r.lic_m||0,r.mest_h||0,r.mest_m||0,r.dout_h||0,r.dout_m||0,r.pos_h||0,r.pos_m||0,i]);
+    res.json({ ok:true });
+  } catch (err) { next(err); }
+});
+
+// PUT /api/submissions/docentes/resultados — quadros A2-A6 e B1-B4
+router.put('/docentes/resultados', async (req, res, next) => {
+  try {
+    const sub = await getOrCreateSubmission(req.user.id, req.user.campus_id, req.user.university_id);
+    await checkNotLocked(sub.id, 'docentes', req.user.role);
+    const d = req.body || {};
+    const degreeFields = 'submission_id,area_formacao,lic_h,lic_m,mest_h,mest_m,dout_h,dout_m,pos_h,pos_m,sort_order';
+    const courseFields = degreeFields.replace('area_formacao', 'curso_formacao');
+    const relDegreeFields = degreeFields.replace('area_formacao', 'relacao');
+    const ctaDegree = 'submission_id,nacionalidade,ensino_primario_h,ensino_primario_m,secundario_1_h,secundario_1_m,secundario_2_h,secundario_2_m,bacharel_h,bacharel_m,lic_h,lic_m,mest_h,mest_m,dout_h,dout_m,sort_order';
+    const ctaRelDegree = ctaDegree.replace('nacionalidade', 'relacao');
+    const ctaNivel = ctaDegree.replace('nacionalidade,', 'regime,').replace(/,sort_order$/, ',sort_order');
+    const degreeValues = (r, i, label) => [sub.id, r[label], r.lic_h||0, r.lic_m||0, r.mest_h||0, r.mest_m||0, r.dout_h||0, r.dout_m||0, r.pos_h||0, r.pos_m||0, i];
+    await saveRows(sub.id, 'docentes_grupo_etario',
+      'submission_id,classe_idade,moz_ti_h,moz_ti_m,moz_tp_h,moz_tp_m,estr_ti_h,estr_ti_m,estr_tp_h,estr_tp_m,sort_order',
+      d.grupoEtario || [], (r,i) => [sub.id,r.classe_idade||'',r.moz_ti_h||0,r.moz_ti_m||0,r.moz_tp_h||0,r.moz_tp_m||0,r.estr_ti_h||0,r.estr_ti_m||0,r.estr_tp_h||0,r.estr_tp_m||0,i]);
+    await saveRows(sub.id, 'docentes_area_formacao', degreeFields, d.areaFormacao || [], (r,i) => degreeValues(r,i,'area_formacao'));
+    await saveRows(sub.id, 'docentes_curso_formacao', courseFields, d.cursoFormacao || [], (r,i) => degreeValues(r,i,'curso_formacao'));
+    await saveRows(sub.id, 'docentes_categoria',
+      'submission_id,regime,categoria,homens,mulheres,sort_order',
+      d.categoria || [], (r,i) => [sub.id,r.regime||'tempo_inteiro',r.categoria||'',r.homens||0,r.mulheres||0,i]);
+    await saveRows(sub.id, 'docentes_relacao', relDegreeFields, d.relacao || [], (r,i) => degreeValues(r,i,'relacao'));
+    const ctaValues = (r,i,label) => [sub.id,r[label],r.ensino_primario_h||0,r.ensino_primario_m||0,r.secundario_1_h||0,r.secundario_1_m||0,r.secundario_2_h||0,r.secundario_2_m||0,r.bacharel_h||0,r.bacharel_m||0,r.lic_h||0,r.lic_m||0,r.mest_h||0,r.mest_m||0,r.dout_h||0,r.dout_m||0,i];
+    await saveRows(sub.id, 'cta_nivel_formacao', ctaNivel, d.ctaNivelFormacao || [], (r,i) => [sub.id,r.regime||'tempo_inteiro',r.ensino_primario_h||0,r.ensino_primario_m||0,r.secundario_1_h||0,r.secundario_1_m||0,r.secundario_2_h||0,r.secundario_2_m||0,r.bacharel_h||0,r.bacharel_m||0,r.lic_h||0,r.lic_m||0,r.mest_h||0,r.mest_m||0,r.dout_h||0,r.dout_m||0,i]);
+    await saveRows(sub.id, 'cta_nacionalidade', ctaDegree, d.ctaNacionalidade || [], (r,i) => ctaValues(r,i,'nacionalidade'));
+    await saveRows(sub.id, 'cta_relacao', ctaRelDegree, d.ctaRelacao || [], (r,i) => ctaValues(r,i,'relacao'));
+    await saveRows(sub.id, 'cta_grupo_etario',
+      'submission_id,classe_idade,moz_ti_h,moz_ti_m,moz_tp_h,moz_tp_m,estr_ti_h,estr_ti_m,estr_tp_h,estr_tp_m,sort_order',
+      d.ctaGrupoEtario || [], (r,i) => [sub.id,r.classe_idade||'',r.moz_ti_h||0,r.moz_ti_m||0,r.moz_tp_h||0,r.moz_tp_m||0,r.estr_ti_h||0,r.estr_ti_m||0,r.estr_tp_h||0,r.estr_tp_m||0,i]);
     res.json({ ok:true });
   } catch (err) { next(err); }
 });

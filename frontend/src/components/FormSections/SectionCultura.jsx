@@ -39,7 +39,8 @@ function TableSection({ title, description, items, setItems, columns, renderRow,
 }
 
 function NumInput(props) {
-  return <input type="number" min="0" {...props} style={{...inpStyle(props.style?.width||44), textAlign:'center', ...props.style}} />;
+  const { onChange, ...inputProps } = props;
+  return <input type="number" min="0" {...inputProps} onChange={(e) => onChange?.(e.target.value)} style={{...inpStyle(props.style?.width||44), textAlign:'center', ...props.style}} />;
 }
 
 function TextInput({ value, onChange, placeholder, width }) {
